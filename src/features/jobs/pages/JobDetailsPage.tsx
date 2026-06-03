@@ -9,6 +9,7 @@ import {
   CalendarClock,
   CheckCircle2,
   Clock,
+  ExternalLink,
   Eye,
   MapPin,
   Share2,
@@ -75,8 +76,19 @@ export default function JobDetailsPage() {
 
   const applied = hasApplied(job.id)
   const saved = isSaved(job.id)
+  const isExternal = job.applyMethod === 'external' && Boolean(job.applyUrl)
 
   function handleApply() {
+    // External jobs redirect to the employer's own application page.
+    if (isExternal) {
+      window.open(job!.applyUrl, '_blank', 'noopener,noreferrer')
+      toast({
+        title: 'Redirecting to company site',
+        description: `Complete your application for ${job!.title} on ${job!.company.name}’s page.`,
+        variant: 'info',
+      })
+      return
+    }
     if (!isAuthenticated) {
       toast({ title: 'Please sign in', description: 'You need an account to apply.', variant: 'info' })
       navigate(ROUTES.login, { state: { from: `/jobs/${job!.id}` } })
@@ -204,7 +216,11 @@ export default function JobDetailsPage() {
           <div className="space-y-6 lg:sticky lg:top-20 lg:self-start">
             <Card>
               <CardContent className="space-y-4 p-6">
-                {applied ? (
+                {isExternal ? (
+                  <Button size="lg" className="w-full" onClick={handleApply}>
+                    Apply on company site <ExternalLink className="h-4 w-4" />
+                  </Button>
+                ) : applied ? (
                   <Button size="lg" className="w-full" disabled>
                     <CheckCircle2 className="h-4 w-4" /> Applied
                   </Button>

@@ -12,12 +12,18 @@ export const postJobSchema = z
     salaryMax: z.coerce.number().min(0, 'Enter a valid amount'),
     description: z.string().min(30, 'Description should be at least 30 characters'),
     skills: z.string().min(1, 'Add at least one skill'),
+    applyMethod: z.enum(['internal', 'external']),
+    applyUrl: z.string().optional().or(z.literal('')),
     isUrgent: z.boolean().optional(),
     isFeatured: z.boolean().optional(),
   })
   .refine(d => d.salaryMax >= d.salaryMin, {
     path: ['salaryMax'],
     message: 'Max salary must be greater than min salary',
+  })
+  .refine(d => d.applyMethod !== 'external' || /^https?:\/\/.+/.test(d.applyUrl ?? ''), {
+    path: ['applyUrl'],
+    message: 'Enter a valid application URL (https://…)',
   })
 export type PostJobFormValues = z.infer<typeof postJobSchema>
 

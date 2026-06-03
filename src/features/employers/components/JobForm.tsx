@@ -21,6 +21,8 @@ import {
   PAKISTAN_CITIES,
   WORK_MODES,
 } from '@/shared/constants'
+import { cn } from '@/shared/lib/utils'
+import { Globe, Send } from 'lucide-react'
 import { postJobSchema, type PostJobFormValues } from '../schemas'
 
 interface JobFormProps {
@@ -40,6 +42,8 @@ const FALLBACK: PostJobFormValues = {
   salaryMax: 200000,
   description: '',
   skills: '',
+  applyMethod: 'internal',
+  applyUrl: '',
   isUrgent: false,
   isFeatured: false,
 }
@@ -140,6 +144,61 @@ export function JobForm({ defaultValues, submitLabel, onSubmit }: JobFormProps) 
             <Input placeholder="React, TypeScript, Node.js" {...register('skills')} />
             <FieldError message={errors.skills?.message} />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">How should candidates apply?</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {(
+              [
+                {
+                  value: 'internal',
+                  icon: Send,
+                  title: 'Apply on PCH',
+                  desc: 'Candidates apply here. You review them on the Applicants page.',
+                },
+                {
+                  value: 'external',
+                  icon: Globe,
+                  title: 'External link',
+                  desc: 'Send candidates to your own careers page or form.',
+                },
+              ] as const
+            ).map(opt => {
+              const Icon = opt.icon
+              const active = watch('applyMethod') === opt.value
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setValue('applyMethod', opt.value, { shouldValidate: true })}
+                  className={cn(
+                    'flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-all',
+                    active ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/40',
+                  )}
+                >
+                  <Icon className={cn('h-5 w-5', active ? 'text-primary' : 'text-muted-foreground')} />
+                  <span className="text-sm font-medium">{opt.title}</span>
+                  <span className="text-xs text-muted-foreground">{opt.desc}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          {watch('applyMethod') === 'external' && (
+            <div>
+              <Label className="mb-1.5 block">Application URL</Label>
+              <Input placeholder="https://company.com.pk/careers/apply" {...register('applyUrl')} />
+              <FieldError message={errors.applyUrl?.message} />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Candidates clicking “Apply” will open this link in a new tab.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

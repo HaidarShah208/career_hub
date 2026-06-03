@@ -39,6 +39,8 @@ export function buildJobFromForm(
     isFeatured: Boolean(values.isFeatured),
     isUrgent: Boolean(values.isUrgent),
     isGovernment: false,
+    applyMethod: values.applyMethod,
+    applyUrl: values.applyMethod === 'external' ? values.applyUrl : undefined,
     status,
   }
 }
@@ -55,6 +57,8 @@ export function formValuesFromJob(job: EmployerJob): PostJobFormValues {
     salaryMax: job.salaryMax,
     description: job.description,
     skills: job.skills.join(', '),
+    applyMethod: job.applyMethod ?? 'internal',
+    applyUrl: job.applyUrl ?? '',
     isUrgent: job.isUrgent,
     isFeatured: job.isFeatured,
   }

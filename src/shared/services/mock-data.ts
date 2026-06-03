@@ -43,6 +43,10 @@ export interface MockJob {
   isFeatured: boolean
   isUrgent: boolean
   isGovernment: boolean
+  /** How candidates apply. `internal` = apply on PCH, `external` = redirect to applyUrl. */
+  applyMethod?: 'internal' | 'external'
+  /** External application URL (only used when applyMethod === 'external'). */
+  applyUrl?: string
 }
 
 export interface MockApplication {
