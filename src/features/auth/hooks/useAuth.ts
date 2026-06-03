@@ -1,0 +1,74 @@
+import { useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+
+import { useAuthStore } from '@/app/store/auth.store'
+import { useToast } from '@/shared/components/ui/toast'
+import { ROUTES } from '@/shared/constants'
+import type { UserRole } from '@/shared/types'
+import * as authApi from '../api/auth.api'
+import type { LoginFormValues, RegisterFormValues } from '../schemas'
+
+function dashboardForRole(role: UserRole): string {
+  switch (role) {
+    case 'employer':
+      return ROUTES.employerDashboard
+    case 'admin':
+      return ROUTES.adminDashboard
+    default:
+      return ROUTES.candidateDashboard
+  }
+}
+
+export function useAuth() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { toast } = useToast()
+  const setAuth = useAuthStore(s => s.setAuth)
+  const logout = useAuthStore(s => s.logout)
+  const [isLoading, setIsLoading] = useState(false)
+
+  async function signIn(values: LoginFormValues) {
+    setIsLoading(true)
+    try {
+      const { user, token } = await authApi.login(values)
+      setAuth(user, token)
+      toast({ title: `Welcome back, ${user.fullName.split(' ')[0]}!`, variant: 'success' })
+      const from = (location.state as { from?: string } | null)?.from
+      navigate(from ?? dashboardForRole(user.role), { replace: true })
+    } catch (err) {
+      toast({
+        title: 'Sign in failed',
+        description: err instanceof Error ? err.message : 'Please try again.',
+        variant: 'error',
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  async function signUp(values: RegisterFormValues) {
+    setIsLoading(true)
+    try {
+      const { user, token } = await authApi.register(values)
+      setAuth(user, token)
+      toast({ title: 'Account created!', description: 'Welcome to Pakistan Career Hub.', variant: 'success' })
+      navigate(dashboardForRole(user.role), { replace: true })
+    } catch (err) {
+      toast({
+        title: 'Registration failed',
+        description: err instanceof Error ? err.message : 'Please try again.',
+        variant: 'error',
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  function signOut() {
+    logout()
+    toast({ title: 'Signed out', variant: 'info' })
+    navigate(ROUTES.home)
+  }
+
+  return { signIn, signUp, signOut, isLoading }
+}
