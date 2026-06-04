@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Bookmark } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
@@ -12,7 +13,7 @@ import type { Job } from '@/features/jobs/types'
 import { ROUTES } from '@/shared/constants'
 
 export default function SavedJobsPage() {
-  const { ids, clear } = useSavedJobs()
+  const { ids, clear, setIds } = useSavedJobs()
   const { data, isLoading } = useQuery({
     queryKey: ['saved-jobs', ids],
     queryFn: async () => {
@@ -22,6 +23,15 @@ export default function SavedJobsPage() {
     enabled: ids.length > 0,
   })
   const jobs = data ?? []
+
+  // Self-heal: drop saved ids whose job no longer exists so the count stays
+  // accurate (e.g. a job that was deleted or a stale id from an old session).
+  useEffect(() => {
+    if (!data) return
+    const validIds = jobs.map((j) => j.id)
+    if (validIds.length !== ids.length) setIds(validIds)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data])
 
   return (
     <div>

@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Linkedin, Link2, Save } from 'lucide-react'
@@ -22,13 +23,15 @@ import { EXPERIENCE_LEVELS, JOB_CATEGORIES, PAKISTAN_CITIES } from '@/shared/con
 import { initials } from '@/shared/lib/utils'
 import { uploadAvatar, deleteAvatar } from '@/shared/services/uploads.api'
 import { useCandidateProfile } from '../hooks/useCandidateProfile'
+import { levelToYears, yearsToLevel } from '../lib/profile'
+import { getCandidateExtras, saveCandidateExtras } from '../lib/extras'
 import { profileSchema, type ProfileFormValues } from '../schemas'
 
 export default function CandidateProfilePage() {
   const { toast } = useToast()
   const user = useAuthStore(s => s.user)
   const updateUser = useAuthStore(s => s.updateUser)
-  const { profile, refetch } = useCandidateProfile()
+  const { profile, refetch, updateProfile, isSaving } = useCandidateProfile()
   const avatarUrl = profile?.avatarUrl ?? user?.avatarUrl ?? null
 
   const {
@@ -36,32 +39,76 @@ export default function CandidateProfilePage() {
     handleSubmit,
     setValue,
     watch,
-    formState: { errors, isSubmitting },
+    reset,
+    formState: { errors },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       fullName: user?.fullName ?? '',
       email: user?.email ?? '',
       phoneNumber: user?.phoneNumber ?? '',
-      city: user?.city ?? 'Lahore',
-      headline: 'Senior Software Engineer',
-      experienceLevel: 'mid',
-      category: 'software',
-      bio: 'Passionate engineer with a track record of building scalable products.',
-      skills: 'React, TypeScript, Node.js, Tailwind CSS',
+      city: user?.city ?? '',
+      headline: '',
+      experienceLevel: 'entry',
+      category: '',
+      bio: '',
+      skills: '',
       linkedin: '',
       portfolio: '',
     },
   })
+
+  // Hydrate the form from the real profile (backend) + local extras once loaded.
+  useEffect(() => {
+    if (!profile) return
+    const extras = getCandidateExtras(user?.id)
+    reset({
+      fullName: user?.fullName ?? '',
+      email: user?.email ?? '',
+      phoneNumber: user?.phoneNumber ?? '',
+      city: profile.city ?? user?.city ?? '',
+      headline: profile.headline ?? '',
+      experienceLevel: yearsToLevel(profile.experienceYears ?? 0),
+      category: extras.category ?? '',
+      bio: profile.bio ?? '',
+      skills: (profile.skills ?? []).join(', '),
+      linkedin: extras.linkedin ?? '',
+      portfolio: extras.portfolio ?? '',
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile])
 
   const city = watch('city')
   const experienceLevel = watch('experienceLevel')
   const category = watch('category')
 
   async function onSubmit(values: ProfileFormValues) {
-    await new Promise(r => setTimeout(r, 700))
-    updateUser({ fullName: values.fullName, phoneNumber: values.phoneNumber, city: values.city })
-    toast({ title: 'Profile updated', description: 'Your changes have been saved.', variant: 'success' })
+    try {
+      await updateProfile({
+        headline: values.headline || undefined,
+        bio: values.bio || undefined,
+        skills: (values.skills ?? '')
+          .split(',')
+          .map(s => s.trim())
+          .filter(Boolean),
+        experienceYears: levelToYears(values.experienceLevel as never),
+        city: values.city || undefined,
+      })
+      updateUser({ fullName: values.fullName, phoneNumber: values.phoneNumber, city: values.city })
+      saveCandidateExtras(user?.id, {
+        category: values.category,
+        linkedin: values.linkedin,
+        portfolio: values.portfolio,
+      })
+      void refetch()
+      toast({ title: 'Profile updated', description: 'Your changes have been saved.', variant: 'success' })
+    } catch (err) {
+      toast({
+        title: 'Could not save profile',
+        description: (err as { message?: string })?.message ?? 'Please try again.',
+        variant: 'error',
+      })
+    }
   }
 
   return (
@@ -70,7 +117,7 @@ export default function CandidateProfilePage() {
         title="My Profile"
         description="Keep your profile up to date to get better job matches."
         actions={
-          <Button type="submit" loading={isSubmitting}>
+          <Button type="submit" loading={isSaving}>
             <Save className="h-4 w-4" /> Save changes
           </Button>
         }

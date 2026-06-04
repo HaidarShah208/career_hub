@@ -7,6 +7,8 @@ interface SavedJobsState {
   ids: string[]
   toggle: (id: string) => void
   isSaved: (id: string) => boolean
+  /** Replaces the saved set (used to prune ids whose jobs no longer exist). */
+  setIds: (ids: string[]) => void
   clear: () => void
 }
 
@@ -21,6 +23,7 @@ export const useSavedJobs = create<SavedJobsState>()(
             : [...state.ids, id],
         })),
       isSaved: id => get().ids.includes(id),
+      setIds: ids => set({ ids }),
       clear: () => set({ ids: [] }),
     }),
     {

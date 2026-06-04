@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Bookmark, Briefcase, Eye, Sparkles, TrendingUp } from 'lucide-react'
+import { Bookmark, Briefcase, GaugeCircle, Sparkles, TrendingUp } from 'lucide-react'
 
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
@@ -10,30 +10,27 @@ import { JobCard } from '@/features/jobs/components/JobCard'
 import { useApplications } from '@/features/applications/hooks/useApplications'
 import { useSavedJobs } from '@/features/jobs/hooks/useSavedJobs'
 import { useJobCollection } from '@/features/jobs/hooks/useJobs'
-import { getRecommendations, DEMO_PROFILE } from '@/features/ai/services/matching'
+import { getRecommendations } from '@/features/ai/services/matching'
+import { useCandidateProfile } from '@/features/candidates/hooks/useCandidateProfile'
+import { useMatchProfile } from '@/features/candidates/hooks/useMatchProfile'
+import { computeProfileSteps, profileScore as scoreFromSteps } from '@/features/candidates/lib/profile'
 import { useAuthStore } from '@/app/store/auth.store'
 import { APPLICATION_STATUSES, ROUTES } from '@/shared/constants'
 import { timeAgo } from '@/shared/lib/utils'
-
-const PROFILE_STEPS = [
-  { label: 'Basic info', done: true },
-  { label: 'Work experience', done: true },
-  { label: 'Education', done: true },
-  { label: 'Skills', done: true },
-  { label: 'Resume uploaded', done: false },
-  { label: 'Portfolio link', done: false },
-]
 
 export default function CandidateOverviewPage() {
   const user = useAuthStore(s => s.user)
   const { applications } = useApplications()
   const { ids } = useSavedJobs()
   const { jobs: latestJobs } = useJobCollection('latest', 12)
-  const recommendations = getRecommendations(DEMO_PROFILE, latestJobs, 4)
+  const { profile } = useCandidateProfile()
+  const matchProfile = useMatchProfile()
+  const recommendations = getRecommendations(matchProfile, latestJobs, 4)
 
   const myApplications = applications.filter(a => a.status !== 'withdrawn')
   const interviews = myApplications.filter(a => a.status === 'interview').length
-  const profileScore = Math.round((PROFILE_STEPS.filter(s => s.done).length / PROFILE_STEPS.length) * 100)
+  const profileSteps = computeProfileSteps(profile, user ?? null)
+  const profileScore = scoreFromSteps(profileSteps)
 
   return (
     <div className="space-y-8">
@@ -45,10 +42,15 @@ export default function CandidateOverviewPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Applications" value={myApplications.length} icon={Briefcase} accent="primary" trend={12} />
-        <StatCard label="Interviews" value={interviews} icon={TrendingUp} accent="success" trend={8} />
-        <StatCard label="Saved Jobs" value={ids.length} icon={Bookmark} accent="info" hint="Across all searches" />
-        <StatCard label="Profile Views" value={148} icon={Eye} accent="warning" trend={-3} />
+        <StatCard label="Applications" value={myApplications.length} icon={Briefcase} accent="primary" />
+        <StatCard label="Interviews" value={interviews} icon={TrendingUp} accent="success" />
+        <StatCard label="Saved Jobs" value={ids.length} icon={Bookmark} accent="info" />
+        <StatCard
+          label="Profile Strength"
+          value={`${profileScore}%`}
+          icon={GaugeCircle}
+          accent="warning"
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -121,7 +123,7 @@ export default function CandidateOverviewPage() {
               </div>
               <Progress value={profileScore} />
               <ul className="space-y-2">
-                {PROFILE_STEPS.map(step => (
+                {profileSteps.map(step => (
                   <li
                     key={step.label}
                     className="flex items-center gap-2 text-sm"

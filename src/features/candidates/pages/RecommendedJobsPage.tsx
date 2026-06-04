@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Sparkles } from 'lucide-react'
 
 import { Badge } from '@/shared/components/ui/badge'
@@ -6,10 +6,11 @@ import { Card, CardContent } from '@/shared/components/ui/card'
 import { PageHeader } from '@/shared/components/common/PageHeader'
 import { JobCard, JobCardSkeleton } from '@/features/jobs/components/JobCard'
 import { useJobCollection } from '@/features/jobs/hooks/useJobs'
-import { getRecommendations, DEMO_PROFILE } from '@/features/ai/services/matching'
+import { getRecommendations } from '@/features/ai/services/matching'
+import { useMatchProfile } from '../hooks/useMatchProfile'
 
 export default function RecommendedJobsPage() {
-  const [profile] = useState(DEMO_PROFILE)
+  const profile = useMatchProfile()
   const { jobs, isLoading } = useJobCollection('latest', 30)
   const matches = useMemo(() => getRecommendations(profile, jobs, 18), [profile, jobs])
 
@@ -30,7 +31,8 @@ export default function RecommendedJobsPage() {
           <div className="flex-1">
             <p className="font-semibold">Your matches are looking great</p>
             <p className="text-sm text-muted-foreground">
-              Based on {profile.skills.length} skills · {profile.preferredCity} · {profile.experienceLevel} level
+              Based on {profile.skills.length} skill{profile.skills.length === 1 ? '' : 's'} ·{' '}
+              {profile.preferredCity || 'any city'} · {profile.experienceLevel} level
             </p>
           </div>
           <Badge variant="success" className="text-sm">

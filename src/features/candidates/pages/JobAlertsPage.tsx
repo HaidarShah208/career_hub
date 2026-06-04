@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Bell, BellRing, Plus, Trash2 } from 'lucide-react'
@@ -19,17 +18,8 @@ import {
 import { PageHeader } from '@/shared/components/common/PageHeader'
 import { useToast } from '@/shared/components/ui/toast'
 import { JOB_CATEGORIES, PAKISTAN_CITIES } from '@/shared/constants'
+import { useJobAlerts } from '../hooks/useJobAlerts'
 import { jobAlertSchema, type JobAlertFormValues } from '../schemas'
-
-interface Alert extends JobAlertFormValues {
-  id: string
-  active: boolean
-}
-
-const INITIAL_ALERTS: Alert[] = [
-  { id: 'a1', keyword: 'React Developer', city: 'Lahore', category: 'software', frequency: 'daily', active: true },
-  { id: 'a2', keyword: 'Product Manager', city: 'Karachi', category: 'software', frequency: 'weekly', active: true },
-]
 
 const FREQ_LABEL: Record<JobAlertFormValues['frequency'], string> = {
   instant: 'Instant',
@@ -40,7 +30,10 @@ const ANY = '__any__'
 
 export default function JobAlertsPage() {
   const { toast } = useToast()
-  const [alerts, setAlerts] = useState<Alert[]>(INITIAL_ALERTS)
+  const alerts = useJobAlerts(s => s.alerts)
+  const addAlert = useJobAlerts(s => s.add)
+  const toggle = useJobAlerts(s => s.toggle)
+  const remove = useJobAlerts(s => s.remove)
 
   const {
     register,
@@ -55,17 +48,9 @@ export default function JobAlertsPage() {
   })
 
   function onSubmit(values: JobAlertFormValues) {
-    setAlerts(prev => [{ ...values, id: `a${Date.now()}`, active: true }, ...prev])
+    addAlert(values)
     reset({ keyword: '', frequency: 'daily', city: '', category: '' })
     toast({ title: 'Alert created', description: `We’ll notify you about “${values.keyword}” jobs.`, variant: 'success' })
-  }
-
-  function toggle(id: string) {
-    setAlerts(prev => prev.map(a => (a.id === id ? { ...a, active: !a.active } : a)))
-  }
-
-  function remove(id: string) {
-    setAlerts(prev => prev.filter(a => a.id !== id))
   }
 
   return (

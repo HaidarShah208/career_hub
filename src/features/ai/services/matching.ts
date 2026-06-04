@@ -63,10 +63,3 @@ export function getRecommendations(
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
 }
-
-export const DEMO_PROFILE: CandidateProfile = {
-  skills: ['React', 'TypeScript', 'Node.js', 'JavaScript', 'Tailwind CSS', 'REST APIs', 'Git'],
-  preferredCity: 'Lahore',
-  preferredCategory: 'software',
-  experienceLevel: 'mid',
-}

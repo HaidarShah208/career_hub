@@ -1,7 +1,11 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { useAuthStore } from '@/app/store/auth.store'
-import { getCandidateProfile } from '../api/candidate.api'
+import {
+  getCandidateProfile,
+  updateCandidateProfile,
+  type UpdateCandidateProfileInput,
+} from '../api/candidate.api'
 
 export const candidateProfileKeys = {
   profile: ['candidate', 'profile'] as const,
@@ -18,9 +22,16 @@ export function useCandidateProfile() {
     enabled: isCandidate,
   })
 
+  const update = useMutation({
+    mutationFn: (input: UpdateCandidateProfileInput) => updateCandidateProfile(input),
+    onSuccess: (data) => queryClient.setQueryData(candidateProfileKeys.profile, data),
+  })
+
   return {
     profile: query.data ?? null,
     isLoading: query.isLoading,
     refetch: () => queryClient.invalidateQueries({ queryKey: candidateProfileKeys.profile }),
+    updateProfile: (input: UpdateCandidateProfileInput) => update.mutateAsync(input),
+    isSaving: update.isPending,
   }
 }

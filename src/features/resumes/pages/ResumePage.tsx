@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Download,
   FileText,
   GraduationCap,
   Plus,
+  Save,
   Sparkles,
   Trash2,
   Upload,
@@ -39,27 +40,45 @@ interface EducationItem {
 
 export default function ResumePage() {
   const { toast } = useToast()
-  const { profile, refetch } = useCandidateProfile()
+  const { profile, refetch, updateProfile, isSaving } = useCandidateProfile()
   const resumeUrl = profile?.resumeUrl ?? null
-  const [summary, setSummary] = useState(
-    'Results-driven software engineer with 5+ years building scalable web applications using React and Node.js.',
-  )
-  const [skills, setSkills] = useState('React, TypeScript, Node.js, PostgreSQL, AWS, Tailwind CSS')
-  const [experience, setExperience] = useState<ExperienceItem[]>([
-    {
-      id: 'e1',
-      title: 'Senior Software Engineer',
-      company: '10Pearls Pakistan',
-      duration: '2022 — Present',
-      description: 'Led a team of 5 engineers building a fintech platform serving 200k+ users.',
-    },
-  ])
-  const [education, setEducation] = useState<EducationItem[]>([
-    { id: 'ed1', degree: 'BS Computer Science', institute: 'FAST-NUCES, Lahore', year: '2019' },
-  ])
+  const [summary, setSummary] = useState('')
+  const [skills, setSkills] = useState('')
+  const [experience, setExperience] = useState<ExperienceItem[]>([])
+  const [education, setEducation] = useState<EducationItem[]>([])
 
-  const filledSections = [summary, skills].filter(Boolean).length + (experience.length ? 1 : 0) + (education.length ? 1 : 0)
-  const score = Math.min(100, 40 + filledSections * 15)
+  // Seed editable fields from the saved profile (bio → summary, skills).
+  useEffect(() => {
+    if (!profile) return
+    setSummary(profile.bio ?? '')
+    setSkills((profile.skills ?? []).join(', '))
+  }, [profile])
+
+  const skillCount = skills.split(',').map(s => s.trim()).filter(Boolean).length
+  const checks = [
+    { label: 'Professional summary added', done: summary.trim().length >= 30 },
+    { label: 'At least 5 relevant skills', done: skillCount >= 5 },
+    { label: 'Work experience added', done: experience.length > 0 },
+    { label: 'Resume file uploaded', done: Boolean(resumeUrl) },
+  ]
+  const score = Math.round((checks.filter(c => c.done).length / checks.length) * 100)
+
+  async function handleSave() {
+    try {
+      await updateProfile({
+        bio: summary || undefined,
+        skills: skills.split(',').map(s => s.trim()).filter(Boolean),
+      })
+      void refetch()
+      toast({ title: 'Resume saved', variant: 'success' })
+    } catch (err) {
+      toast({
+        title: 'Could not save',
+        description: (err as { message?: string })?.message ?? 'Please try again.',
+        variant: 'error',
+      })
+    }
+  }
 
   function addExperience() {
     setExperience(prev => [
@@ -77,20 +96,25 @@ export default function ResumePage() {
         title="Resume Builder"
         description="Build a professional resume and let AI score it before you apply."
         actions={
-          resumeUrl ? (
-            <>
-              <Button variant="outline" asChild>
-                <a href={resumeUrl} target="_blank" rel="noopener noreferrer">
-                  <FileText className="h-4 w-4" /> View resume
-                </a>
-              </Button>
-              <Button asChild>
-                <a href={resumeUrl} download>
-                  <Download className="h-4 w-4" /> Download
-                </a>
-              </Button>
-            </>
-          ) : undefined
+          <>
+            {resumeUrl && (
+              <>
+                <Button variant="outline" asChild>
+                  <a href={resumeUrl} target="_blank" rel="noopener noreferrer">
+                    <FileText className="h-4 w-4" /> View resume
+                  </a>
+                </Button>
+                <Button variant="outline" asChild>
+                  <a href={resumeUrl} download>
+                    <Download className="h-4 w-4" /> Download
+                  </a>
+                </Button>
+              </>
+            )}
+            <Button onClick={handleSave} loading={isSaving}>
+              <Save className="h-4 w-4" /> Save
+            </Button>
+          </>
         }
       />
 
@@ -259,17 +283,12 @@ export default function ResumePage() {
               </div>
               <Progress value={score} indicatorClassName="bg-gradient-to-r from-primary to-emerald-500" />
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>✓ Clear professional summary</li>
-                <li>✓ Quantified achievements</li>
-                <li>{skills.split(',').length >= 5 ? '✓' : '○'} Add at least 5 relevant skills</li>
-                <li>○ Add a portfolio or GitHub link</li>
+                {checks.map(c => (
+                  <li key={c.label} className={c.done ? 'text-foreground' : ''}>
+                    {c.done ? '✓' : '○'} {c.label}
+                  </li>
+                ))}
               </ul>
-              <Button
-                className="w-full"
-                onClick={() => toast({ title: 'AI analysis complete', description: 'See suggestions in Career AI.', variant: 'success' })}
-              >
-                Re-analyze with AI
-              </Button>
             </CardContent>
           </Card>
         </div>

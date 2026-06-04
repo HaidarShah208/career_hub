@@ -165,6 +165,8 @@ export const STORAGE_KEYS = {
   theme: 'pch.theme',
   recentSearches: 'pch.recent_searches',
   savedJobs: 'pch.saved_jobs',
+  jobAlerts: 'pch.job_alerts',
+  candidateExtras: 'pch.candidate_extras',
 } as const
 
 export const API_BASE_URL =
