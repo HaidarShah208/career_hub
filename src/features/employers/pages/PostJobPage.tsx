@@ -52,7 +52,7 @@ export default function PostJobPage() {
       </Button>
       <PageHeader title="Post a New Job" description="Fill in the details to publish your job listing." />
       {!isLoading && !hasCompany && (
-        <p className="mb-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
+        <p className="mb-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning">
           You haven’t created a company yet. Create one on the{' '}
           <button className="font-medium underline" onClick={() => navigate(ROUTES.employerCompany)}>
             Company

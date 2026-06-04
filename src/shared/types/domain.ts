@@ -132,6 +132,13 @@ export interface BackendJob {
   employmentType: BackendEmploymentType
   salaryMin?: number | null
   salaryMax?: number | null
+  category?: string | null
+  experienceLevel?: string | null
+  skills?: string[] | null
+  applyMethod?: 'internal' | 'external' | null
+  applyUrl?: string | null
+  isUrgent?: boolean | null
+  isFeatured?: boolean | null
   status: BackendJobStatus
   companyId: string
   company?: BackendCompany

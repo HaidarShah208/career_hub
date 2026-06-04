@@ -95,26 +95,27 @@ export function mapJob(j: BackendJob): Job {
     slug: j.slug,
     companyId: j.companyId,
     company,
-    category: 'software',
+    category: j.category || 'software',
     city,
     workMode,
     jobType: EMPLOYMENT_TO_JOBTYPE[j.employmentType] ?? 'full_time',
-    experienceLevel: 'mid' as ExperienceLevel,
+    experienceLevel: (j.experienceLevel as ExperienceLevel) || ('mid' as ExperienceLevel),
     salaryMin: j.salaryMin ?? 0,
     salaryMax: j.salaryMax ?? 0,
     description: j.description,
     requirements: [],
     responsibilities: [],
     benefits: [],
-    skills: [],
+    skills: j.skills ?? [],
     postedAt: j.createdAt,
     expiresAt: addDays(j.createdAt, 30),
     applicants: 0,
     views: 0,
-    isFeatured: false,
-    isUrgent: false,
+    isFeatured: Boolean(j.isFeatured),
+    isUrgent: Boolean(j.isUrgent),
     isGovernment: false,
-    applyMethod: 'internal',
+    applyMethod: j.applyMethod || 'internal',
+    applyUrl: j.applyUrl || undefined,
     backendStatus: j.status,
   }
 }
@@ -127,6 +128,13 @@ export interface BackendJobInput {
   employmentType: BackendEmploymentType
   salaryMin?: number
   salaryMax?: number
+  category?: string
+  experienceLevel?: string
+  skills?: string[]
+  applyMethod?: 'internal' | 'external'
+  applyUrl?: string
+  isUrgent?: boolean
+  isFeatured?: boolean
   status?: 'DRAFT' | 'PUBLISHED' | 'CLOSED'
 }
 

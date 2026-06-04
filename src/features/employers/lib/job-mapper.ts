@@ -8,6 +8,11 @@ export function buildJobPayload(
   values: PostJobFormValues,
   status?: 'DRAFT' | 'PUBLISHED' | 'CLOSED',
 ): EmployerJobInput {
+  const skills = values.skills
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+
   return {
     title: values.title,
     description: values.description,
@@ -15,6 +20,13 @@ export function buildJobPayload(
     employmentType: toBackendEmploymentType(values.jobType, values.workMode),
     salaryMin: values.salaryMin,
     salaryMax: values.salaryMax,
+    category: values.category,
+    experienceLevel: values.experienceLevel,
+    skills,
+    applyMethod: values.applyMethod,
+    applyUrl: values.applyMethod === 'external' ? values.applyUrl || undefined : undefined,
+    isUrgent: values.isUrgent,
+    isFeatured: values.isFeatured,
     ...(status ? { status } : {}),
   }
 }

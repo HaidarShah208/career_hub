@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
@@ -77,8 +78,18 @@ export function JobForm({ defaultValues, submitLabel, onSubmit }: JobFormProps) 
     { name: 'experienceLevel', label: 'Experience Level', options: EXPERIENCE_LEVELS },
   ]
 
+  // Prevent the browser's implicit "Enter submits the form" behaviour when the
+  // focus is on a single-line <input> (e.g. the skills field). Submitting should
+  // only happen via the explicit button. Textareas keep normal Enter handling.
+  function handleKeyDown(e: KeyboardEvent<HTMLFormElement>) {
+    const target = e.target as HTMLElement
+    if (e.key === 'Enter' && target.tagName === 'INPUT') {
+      e.preventDefault()
+    }
+  }
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} onKeyDown={handleKeyDown} className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Job details</CardTitle>

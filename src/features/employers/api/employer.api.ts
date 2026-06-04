@@ -58,6 +58,13 @@ export interface EmployerJobInput {
   employmentType: BackendEmploymentType
   salaryMin?: number
   salaryMax?: number
+  category?: string
+  experienceLevel?: string
+  skills?: string[]
+  applyMethod?: 'internal' | 'external'
+  applyUrl?: string
+  isUrgent?: boolean
+  isFeatured?: boolean
   status?: 'DRAFT' | 'PUBLISHED' | 'CLOSED'
 }
 
