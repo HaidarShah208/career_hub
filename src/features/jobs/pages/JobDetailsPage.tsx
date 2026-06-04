@@ -55,7 +55,7 @@ export default function JobDetailsPage() {
   const { toast } = useToast()
   const { job, related, isLoading, error } = useJob(id)
   const { isSaved, toggle } = useSavedJobs()
-  const { hasApplied, apply } = useApplications()
+  const { hasApplied, apply, isApplying } = useApplications()
   const isAuthenticated = useAuthStore(s => s.isAuthenticated)
 
   const [applyOpen, setApplyOpen] = useState(false)
@@ -97,15 +97,24 @@ export default function JobDetailsPage() {
     setApplyOpen(true)
   }
 
-  function confirmApply() {
-    apply(job!, coverLetter)
-    setApplyOpen(false)
-    setCoverLetter('')
-    toast({
-      title: 'Application submitted!',
-      description: `Your application for ${job!.title} has been sent.`,
-      variant: 'success',
-    })
+  async function confirmApply() {
+    try {
+      await apply(job!.id)
+      setApplyOpen(false)
+      setCoverLetter('')
+      toast({
+        title: 'Application submitted!',
+        description: `Your application for ${job!.title} has been sent.`,
+        variant: 'success',
+      })
+    } catch (err) {
+      toast({
+        title: 'Could not apply',
+        description:
+          (err as { message?: string })?.message ?? 'Something went wrong. Please try again.',
+        variant: 'error',
+      })
+    }
   }
 
   function share() {
@@ -302,7 +311,9 @@ export default function JobDetailsPage() {
             <Button variant="outline" onClick={() => setApplyOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={confirmApply}>Submit Application</Button>
+            <Button onClick={confirmApply} disabled={isApplying}>
+              {isApplying ? 'Submitting…' : 'Submit Application'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

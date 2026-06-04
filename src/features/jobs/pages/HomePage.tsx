@@ -28,10 +28,9 @@ import { CompanyCard } from '@/features/companies/components/CompanyCard'
 import { useJobCollection } from '../hooks/useJobs'
 import { useTopCompanies } from '@/features/companies/hooks/useCompanies'
 import { APP_NAME, JOB_CATEGORIES, ROUTES } from '@/shared/constants'
-import { MOCK_JOBS } from '@/shared/services/mock-data'
 
 const HERO_STATS = [
-  { label: 'Active Jobs', value: `${MOCK_JOBS.length.toLocaleString()}+`, icon: Briefcase },
+  { label: 'Active Jobs', value: '12,000+', icon: Briefcase },
   { label: 'Companies Hiring', value: '8,400+', icon: Building2 },
   { label: 'Professionals', value: '2.1M+', icon: Users },
   { label: 'Jobs Filled', value: '320k+', icon: TrendingUp },
@@ -116,7 +115,7 @@ export default function HomePage() {
               </span>
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
-              {APP_NAME} connects you with {MOCK_JOBS.length.toLocaleString()}+ verified opportunities across the
+              {APP_NAME} connects you with thousands of verified opportunities across the
               country and remote roles worldwide.
             </p>
           </motion.div>

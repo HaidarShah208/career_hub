@@ -1,30 +1,18 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Landmark, Search, ShieldCheck } from 'lucide-react'
 
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Pagination } from '@/shared/components/common/Pagination'
-import { JobCard } from '../components/JobCard'
-import { MOCK_JOBS } from '@/shared/services/mock-data'
-import { PAGINATION } from '@/shared/constants'
-
-const PAGE_SIZE = PAGINATION.jobsPerPage
+import { JobCard, JobCardSkeleton } from '../components/JobCard'
+import { useJobs } from '../hooks/useJobs'
 
 export default function GovernmentJobsPage() {
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
 
-  const govJobs = useMemo(
-    () =>
-      MOCK_JOBS.filter(j => j.isGovernment).filter(j =>
-        query ? `${j.title} ${j.company.name}`.toLowerCase().includes(query.toLowerCase()) : true,
-      ),
-    [query],
-  )
-
-  const totalPages = Math.max(1, Math.ceil(govJobs.length / PAGE_SIZE))
-  const pageJobs = govJobs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const { jobs: pageJobs, totalPages, isLoading } = useJobs({ query }, page)
 
   return (
     <div>
@@ -57,7 +45,13 @@ export default function GovernmentJobsPage() {
       </section>
 
       <section className="container py-10">
-        {pageJobs.length === 0 ? (
+        {isLoading ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <JobCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : pageJobs.length === 0 ? (
           <div className="py-16 text-center text-muted-foreground">
             No government jobs match your search.
             <div className="mt-4">

@@ -1,5 +1,4 @@
 import type { Job } from '@/features/jobs/types'
-import { MOCK_JOBS } from '@/shared/services/mock-data'
 
 export interface CandidateProfile {
   skills: string[]
@@ -50,8 +49,17 @@ export function scoreJob(profile: CandidateProfile, job: Job): JobMatch {
   return { job, score, reasons }
 }
 
-export function getRecommendations(profile: CandidateProfile, limit = 12): JobMatch[] {
-  return MOCK_JOBS.map(job => scoreJob(profile, job))
+/**
+ * Ranks the provided jobs against the candidate profile. The job list is
+ * supplied by the caller (fetched from the real API) so this stays pure.
+ */
+export function getRecommendations(
+  profile: CandidateProfile,
+  jobs: Job[],
+  limit = 12,
+): JobMatch[] {
+  return jobs
+    .map((job) => scoreJob(profile, job))
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
 }

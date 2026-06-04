@@ -30,9 +30,22 @@ const TABS: { value: 'all' | ApplicantStatus; label: string }[] = [
 
 export default function ApplicantsPage() {
   const { toast } = useToast()
-  const { applicants, setStatus } = useApplicants()
+  const { applicants, isLoading, setStatus } = useApplicants()
   const [tab, setTab] = useState<'all' | ApplicantStatus>('all')
   const [query, setQuery] = useState('')
+
+  async function changeStatus(id: string, status: ApplicantStatus, name: string) {
+    try {
+      await setStatus(id, status)
+      toast({ title: `${name} marked ${status}`, variant: 'success' })
+    } catch (err) {
+      toast({
+        title: 'Could not update status',
+        description: (err as { message?: string })?.message ?? 'Please try again.',
+        variant: 'error',
+      })
+    }
+  }
 
   const filtered = useMemo(
     () =>
@@ -68,6 +81,13 @@ export default function ApplicantsPage() {
         </div>
       </div>
 
+      {isLoading ? (
+        <div className="py-16 text-center text-sm text-muted-foreground">Loading applicants…</div>
+      ) : filtered.length === 0 ? (
+        <div className="py-16 text-center text-sm text-muted-foreground">
+          No applicants yet. They’ll appear here once candidates apply to your jobs.
+        </div>
+      ) : (
       <div className="space-y-3">
         {filtered.map(applicant => (
           <Card key={applicant.id}>
@@ -104,25 +124,33 @@ export default function ApplicantsPage() {
                   </p>
                   <p className="text-[10px] text-muted-foreground">match</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      setStatus(applicant.id, 'shortlisted')
-                      toast({ title: `${applicant.name} shortlisted`, variant: 'success' })
-                    }}
+                    onClick={() => changeStatus(applicant.id, 'shortlisted', applicant.name)}
                   >
                     <Check className="h-3.5 w-3.5" /> Shortlist
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => changeStatus(applicant.id, 'interview', applicant.name)}
+                  >
+                    Interview
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => changeStatus(applicant.id, 'hired', applicant.name)}
+                  >
+                    Hire
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => {
-                      setStatus(applicant.id, 'rejected')
-                      toast({ title: `${applicant.name} rejected`, variant: 'info' })
-                    }}
+                    onClick={() => changeStatus(applicant.id, 'rejected', applicant.name)}
                   >
                     <X className="h-3.5 w-3.5" /> Reject
                   </Button>
@@ -132,6 +160,7 @@ export default function ApplicantsPage() {
           </Card>
         ))}
       </div>
+      )}
     </div>
   )
 }

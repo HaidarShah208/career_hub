@@ -1,30 +1,21 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Globe, Laptop, Sparkles } from 'lucide-react'
 
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Pagination } from '@/shared/components/common/Pagination'
-import { JobCard } from '../components/JobCard'
-import { MOCK_JOBS } from '@/shared/services/mock-data'
-import { PAGINATION } from '@/shared/constants'
-
-const PAGE_SIZE = PAGINATION.jobsPerPage
+import { JobCard, JobCardSkeleton } from '../components/JobCard'
+import { useJobs } from '../hooks/useJobs'
 
 export default function RemoteJobsPage() {
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
 
-  const remoteJobs = useMemo(
-    () =>
-      MOCK_JOBS.filter(j => j.workMode === 'remote').filter(j =>
-        query ? `${j.title} ${j.company.name} ${j.skills.join(' ')}`.toLowerCase().includes(query.toLowerCase()) : true,
-      ),
-    [query],
+  const { jobs: pageJobs, total, totalPages, isLoading } = useJobs(
+    { workMode: 'remote', query },
+    page,
   )
-
-  const totalPages = Math.max(1, Math.ceil(remoteJobs.length / PAGE_SIZE))
-  const pageJobs = remoteJobs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   return (
     <div>
@@ -35,7 +26,7 @@ export default function RemoteJobsPage() {
           </Badge>
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Remote Jobs in Pakistan</h1>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-            {remoteJobs.length}+ fully remote roles from companies that let you work from home, anywhere in Pakistan.
+            {total}+ fully remote roles from companies that let you work from home, anywhere in Pakistan.
           </p>
           <div className="mx-auto mt-6 max-w-md">
             <Input
@@ -53,7 +44,13 @@ export default function RemoteJobsPage() {
       </section>
 
       <section className="container py-10">
-        {pageJobs.length === 0 ? (
+        {isLoading ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <JobCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : pageJobs.length === 0 ? (
           <div className="py-16 text-center text-muted-foreground">
             <Sparkles className="mx-auto mb-3 h-8 w-8 text-primary" />
             No remote jobs match your search.

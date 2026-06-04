@@ -1,5 +1,3 @@
-import { MOCK_COMPANIES, MOCK_JOBS } from '@/shared/services/mock-data'
-
 export interface AdminUser {
   id: string
   name: string
@@ -37,17 +35,25 @@ export interface PendingEmployer {
   documents: number
 }
 
-export const PENDING_EMPLOYERS: PendingEmployer[] = MOCK_COMPANIES.filter(c => !c.isVerified)
-  .slice(0, 8)
-  .map((c, i) => ({
+const PENDING_COMPANY_SEED = [
+  ['Skyline Tech', 'Software', 'Lahore'],
+  ['GreenLeaf Foods', 'FMCG', 'Karachi'],
+  ['Indus Logistics', 'Logistics', 'Islamabad'],
+  ['Falcon Security', 'Services', 'Rawalpindi'],
+  ['Nova Health', 'Healthcare', 'Faisalabad'],
+]
+
+export const PENDING_EMPLOYERS: PendingEmployer[] = PENDING_COMPANY_SEED.map(
+  ([company, industry, city], i) => ({
     id: `pe_${i}`,
-    company: c.name,
-    logoUrl: c.logoUrl,
-    industry: c.industry,
-    city: c.city,
+    company,
+    logoUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(company)}&backgroundColor=16a34a`,
+    industry,
+    city,
     submittedAt: new Date(Date.now() - i * 2 * 86400000).toISOString(),
     documents: 2 + (i % 3),
-  }))
+  }),
+)
 
 export interface ModerationJob {
   id: string
@@ -58,14 +64,11 @@ export interface ModerationJob {
   flagReason?: string
 }
 
-export const MODERATION_JOBS: ModerationJob[] = MOCK_JOBS.slice(0, 12).map((j, i) => ({
-  id: j.id,
-  title: j.title,
-  company: j.company.name,
-  city: j.city,
-  postedAt: j.postedAt,
-  flagReason: i % 4 === 0 ? 'Possible duplicate' : i % 5 === 0 ? 'Salary not disclosed' : undefined,
-}))
+/**
+ * Static fallback used only if the live `/admin/jobs` request fails. The
+ * Job Moderation screen fetches real jobs from the backend (see its page).
+ */
+export const MODERATION_JOBS: ModerationJob[] = []
 
 export interface AdminCategory {
   id: string

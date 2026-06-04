@@ -1,4 +1,4 @@
-import type { MockApplication } from '@/shared/services/mock-data'
+import type { Application, DomainApplicationStatus } from '@/shared/types/domain'
 
-export type Application = MockApplication
-export type ApplicationStatus = Application['status']
+export type { Application }
+export type ApplicationStatus = DomainApplicationStatus

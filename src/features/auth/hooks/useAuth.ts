@@ -19,6 +19,15 @@ function dashboardForRole(role: UserRole): string {
   }
 }
 
+/** Extracts a human-readable message from either an Error or an ApiError. */
+function getErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof Error) return err.message
+  if (err && typeof err === 'object' && 'message' in err) {
+    return String((err as { message?: unknown }).message ?? fallback)
+  }
+  return fallback
+}
+
 export function useAuth() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -38,7 +47,7 @@ export function useAuth() {
     } catch (err) {
       toast({
         title: 'Sign in failed',
-        description: err instanceof Error ? err.message : 'Please try again.',
+        description: getErrorMessage(err, 'Invalid email or password.'),
         variant: 'error',
       })
     } finally {
@@ -56,7 +65,7 @@ export function useAuth() {
     } catch (err) {
       toast({
         title: 'Registration failed',
-        description: err instanceof Error ? err.message : 'Please try again.',
+        description: getErrorMessage(err, 'Please try again.'),
         variant: 'error',
       })
     } finally {
@@ -65,6 +74,7 @@ export function useAuth() {
   }
 
   function signOut() {
+    void authApi.logout()
     logout()
     toast({ title: 'Signed out', variant: 'info' })
     navigate(ROUTES.home)

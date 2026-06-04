@@ -1,67 +1,52 @@
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 
 import { fetchCompanies, fetchCompanyById, fetchTopCompanies } from '../api/companies.api'
 import { fetchSimilarByCompany } from '@/features/jobs/api/jobs.api'
-import type { Job } from '@/features/jobs/types'
-import type { Company, CompanyFilters } from '../types'
+import type { CompanyFilters } from '../types'
+
+export const companyKeys = {
+  all: ['companies'] as const,
+  list: (filters: Partial<CompanyFilters>) => ['companies', 'list', filters] as const,
+  top: (limit?: number) => ['companies', 'top', limit] as const,
+  detail: (id: string) => ['companies', 'detail', id] as const,
+  jobs: (id: string) => ['companies', 'jobs', id] as const,
+}
 
 export function useCompanies(filters: Partial<CompanyFilters>) {
-  const [companies, setCompanies] = useState<Company[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const key = JSON.stringify(filters)
-
-  useEffect(() => {
-    let active = true
-    setIsLoading(true)
-    fetchCompanies(filters)
-      .then(res => active && setCompanies(res))
-      .finally(() => active && setIsLoading(false))
-    return () => {
-      active = false
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key])
-
-  return { companies, isLoading }
+  const query = useQuery({
+    queryKey: companyKeys.list(filters),
+    queryFn: () => fetchCompanies(filters),
+    placeholderData: (prev) => prev,
+  })
+  return { companies: query.data ?? [], isLoading: query.isLoading }
 }
 
 export function useTopCompanies(limit?: number) {
-  const [companies, setCompanies] = useState<Company[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    let active = true
-    fetchTopCompanies(limit)
-      .then(res => active && setCompanies(res))
-      .finally(() => active && setIsLoading(false))
-    return () => {
-      active = false
-    }
-  }, [limit])
-
-  return { companies, isLoading }
+  const query = useQuery({
+    queryKey: companyKeys.top(limit),
+    queryFn: () => fetchTopCompanies(limit),
+  })
+  return { companies: query.data ?? [], isLoading: query.isLoading }
 }
 
 export function useCompany(id: string | undefined) {
-  const [company, setCompany] = useState<Company | null>(null)
-  const [jobs, setJobs] = useState<Job[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const companyQuery = useQuery({
+    queryKey: companyKeys.detail(id ?? ''),
+    queryFn: () => fetchCompanyById(id as string),
+    enabled: Boolean(id),
+  })
 
-  useEffect(() => {
-    if (!id) return
-    let active = true
-    setIsLoading(true)
-    fetchCompanyById(id)
-      .then(async res => {
-        if (!active) return
-        setCompany(res)
-        if (res) setJobs(await fetchSimilarByCompany(res.id))
-      })
-      .finally(() => active && setIsLoading(false))
-    return () => {
-      active = false
-    }
-  }, [id])
+  const company = companyQuery.data ?? null
 
-  return { company, jobs, isLoading }
+  const jobsQuery = useQuery({
+    queryKey: companyKeys.jobs(id ?? ''),
+    queryFn: () => fetchSimilarByCompany(company!.id),
+    enabled: Boolean(company),
+  })
+
+  return {
+    company,
+    jobs: jobsQuery.data ?? [],
+    isLoading: companyQuery.isLoading,
+  }
 }

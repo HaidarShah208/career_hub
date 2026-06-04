@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 
 import {
   fetchJobs,
@@ -7,83 +7,65 @@ import {
   fetchLatestJobs,
   fetchRelatedJobs,
 } from '../api/jobs.api'
-import type { Job, JobFilters, JobQueryResult } from '../types'
+import type { JobFilters } from '../types'
 
-interface UseJobsState extends JobQueryResult {
-  isLoading: boolean
-  error: string | null
+export const jobKeys = {
+  all: ['jobs'] as const,
+  list: (filters: Partial<JobFilters>, page: number) => ['jobs', 'list', filters, page] as const,
+  detail: (id: string) => ['jobs', 'detail', id] as const,
+  related: (id: string) => ['jobs', 'related', id] as const,
+  collection: (kind: string, limit?: number) => ['jobs', 'collection', kind, limit] as const,
 }
 
-const initialResult: JobQueryResult = { jobs: [], total: 0, totalPages: 1, page: 1 }
-
 export function useJobs(filters: Partial<JobFilters>, page: number) {
-  const [state, setState] = useState<UseJobsState>({
-    ...initialResult,
-    isLoading: true,
-    error: null,
+  const query = useQuery({
+    queryKey: jobKeys.list(filters, page),
+    queryFn: () => fetchJobs(filters, page),
+    placeholderData: (prev) => prev,
   })
-  const requestId = useRef(0)
-  const filtersKey = JSON.stringify(filters)
 
-  useEffect(() => {
-    const id = ++requestId.current
-    setState(prev => ({ ...prev, isLoading: true, error: null }))
-    fetchJobs(filters, page)
-      .then(res => {
-        if (id !== requestId.current) return
-        setState({ ...res, isLoading: false, error: null })
-      })
-      .catch(() => {
-        if (id !== requestId.current) return
-        setState({ ...initialResult, isLoading: false, error: 'Failed to load jobs' })
-      })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtersKey, page])
-
-  return state
+  return {
+    jobs: query.data?.jobs ?? [],
+    total: query.data?.total ?? 0,
+    totalPages: query.data?.totalPages ?? 1,
+    page: query.data?.page ?? page,
+    isLoading: query.isLoading,
+    error: query.isError ? 'Failed to load jobs' : null,
+  }
 }
 
 export function useJob(id: string | undefined) {
-  const [job, setJob] = useState<Job | null>(null)
-  const [related, setRelated] = useState<Job[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const jobQuery = useQuery({
+    queryKey: jobKeys.detail(id ?? ''),
+    queryFn: () => fetchJobById(id as string),
+    enabled: Boolean(id),
+  })
 
-  useEffect(() => {
-    if (!id) return
-    let active = true
-    setIsLoading(true)
-    setError(null)
-    fetchJobById(id)
-      .then(async result => {
-        if (!active) return
-        setJob(result)
-        if (result) setRelated(await fetchRelatedJobs(result))
-        if (!result) setError('Job not found')
-      })
-      .catch(() => active && setError('Failed to load job'))
-      .finally(() => active && setIsLoading(false))
-    return () => {
-      active = false
-    }
-  }, [id])
+  const job = jobQuery.data ?? null
 
-  return { job, related, isLoading, error }
+  const relatedQuery = useQuery({
+    queryKey: jobKeys.related(id ?? ''),
+    queryFn: () => fetchRelatedJobs(job!),
+    enabled: Boolean(job),
+  })
+
+  return {
+    job,
+    related: relatedQuery.data ?? [],
+    isLoading: jobQuery.isLoading,
+    error: jobQuery.isError ? 'Failed to load job' : !jobQuery.isLoading && !job ? 'Job not found' : null,
+  }
 }
 
 export function useJobCollection(kind: 'featured' | 'latest', limit?: number) {
-  const [jobs, setJobs] = useState<Job[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const query = useQuery({
+    queryKey: jobKeys.collection(kind, limit),
+    queryFn: () => (kind === 'featured' ? fetchFeaturedJobs(limit) : fetchLatestJobs(limit)),
+  })
 
-  const load = useCallback(() => {
-    setIsLoading(true)
-    const promise = kind === 'featured' ? fetchFeaturedJobs(limit) : fetchLatestJobs(limit)
-    promise.then(setJobs).finally(() => setIsLoading(false))
-  }, [kind, limit])
-
-  useEffect(() => {
-    load()
-  }, [load])
-
-  return { jobs, isLoading, reload: load }
+  return {
+    jobs: query.data ?? [],
+    isLoading: query.isLoading,
+    reload: query.refetch,
+  }
 }

@@ -1,52 +1,45 @@
-import { create } from 'zustand'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { MOCK_APPLICATIONS } from '@/shared/services/mock-data'
-import type { Job } from '@/features/jobs/types'
-import type { Application, ApplicationStatus } from '../types'
+import { useAuthStore } from '@/app/store/auth.store'
+import { applyToJob, fetchMyApplications } from '../api/applications.api'
 
-interface ApplicationsState {
-  applications: Application[]
-  hasApplied: (jobId: string) => boolean
-  apply: (job: Job, coverLetter?: string) => void
-  withdraw: (applicationId: string) => void
-  setStatus: (applicationId: string, status: ApplicationStatus) => void
+export const applicationKeys = {
+  mine: ['applications', 'my'] as const,
+  detail: (id: string) => ['applications', 'detail', id] as const,
 }
 
-export const useApplications = create<ApplicationsState>((set, get) => ({
-  applications: MOCK_APPLICATIONS,
+/**
+ * The current candidate's applications plus the apply mutation. The list query
+ * is only enabled for authenticated candidates (the `/applications/my`
+ * endpoint requires the CANDIDATE role).
+ */
+export function useApplications() {
+  const queryClient = useQueryClient()
+  const user = useAuthStore((s) => s.user)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const enabled = isAuthenticated && user?.role === 'candidate'
 
-  hasApplied: jobId => get().applications.some(a => a.jobId === jobId && a.status !== 'withdrawn'),
+  const query = useQuery({
+    queryKey: applicationKeys.mine,
+    queryFn: fetchMyApplications,
+    enabled,
+  })
 
-  apply: (job, coverLetter) =>
-    set(state => {
-      if (state.applications.some(a => a.jobId === job.id && a.status !== 'withdrawn')) {
-        return state
-      }
-      const application: Application = {
-        id: `app_${Date.now()}`,
-        jobId: job.id,
-        job,
-        candidateId: 'user_1',
-        status: 'applied',
-        appliedAt: new Date().toISOString(),
-        coverLetter,
-        resumeUrl: '/resume.pdf',
-        matchScore: Math.floor(60 + Math.random() * 39),
-      }
-      return { applications: [application, ...state.applications] }
-    }),
+  const applications = query.data ?? []
 
-  withdraw: applicationId =>
-    set(state => ({
-      applications: state.applications.map(a =>
-        a.id === applicationId ? { ...a, status: 'withdrawn' } : a,
-      ),
-    })),
+  const applyMutation = useMutation({
+    mutationFn: (jobId: string) => applyToJob(jobId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: applicationKeys.mine }),
+  })
 
-  setStatus: (applicationId, status) =>
-    set(state => ({
-      applications: state.applications.map(a =>
-        a.id === applicationId ? { ...a, status } : a,
-      ),
-    })),
-}))
+  return {
+    applications,
+    isLoading: query.isLoading && enabled,
+    isError: query.isError,
+    hasApplied: (jobId: string) => applications.some((a) => a.jobId === jobId),
+    apply: (jobId: string) => applyMutation.mutateAsync(jobId),
+    isApplying: applyMutation.isPending,
+    /** Withdrawing an application is not supported by the backend yet. */
+    withdraw: (_applicationId: string) => undefined,
+  }
+}

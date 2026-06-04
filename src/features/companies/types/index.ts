@@ -1,6 +1,6 @@
-import type { MockCompany } from '@/shared/services/mock-data'
+import type { Company } from '@/shared/types/domain'
 
-export type Company = MockCompany
+export type { Company }
 
 export interface CompanyFilters {
   query: string

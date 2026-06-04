@@ -1,5 +1,5 @@
-import { MOCK_USERS } from '@/shared/services/mock-data'
-import { sleep } from '@/shared/lib/utils'
+import http, { unwrap } from '@/shared/services/http'
+import { STORAGE_KEYS } from '@/shared/constants'
 import type { User, UserRole } from '@/shared/types'
 import type { LoginFormValues, RegisterFormValues } from '../schemas'
 
@@ -8,51 +8,116 @@ export interface AuthResult {
   token: string
 }
 
-function fakeToken(userId: string): string {
-  return `mock.jwt.${userId}.${Date.now()}`
+/** Shape of the user object returned by the backend. */
+interface BackendUser {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  role: 'ADMIN' | 'EMPLOYER' | 'CANDIDATE'
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+interface SignInResponse extends BackendUser {}
+
+interface AuthPayload {
+  user: BackendUser
+  accessToken: string
+  refreshToken: string
+}
+
+/** Maps the backend user representation to the frontend `User` model. */
+export function mapUser(backend: BackendUser): User {
+  return {
+    id: backend.id,
+    email: backend.email,
+    fullName: `${backend.firstName} ${backend.lastName}`.trim(),
+    role: backend.role.toLowerCase() as UserRole,
+    isVerified: backend.isActive,
+    createdAt: backend.createdAt,
+    updatedAt: backend.updatedAt,
+  }
+}
+
+function storeRefreshToken(token: string | undefined) {
+  if (token) localStorage.setItem(STORAGE_KEYS.refreshToken, token)
 }
 
 /**
- * Mock auth API. Any password is accepted for the seeded demo accounts.
- * Replace with real `http.post('/auth/login', ...)` calls when wiring a backend.
+ * Real backend sign-in. In Phase 1 only the seeded admin account can sign in
+ * (POST /api/v1/auth/signin). The access token is returned to the caller and
+ * the refresh token is persisted for later token refresh.
  */
 export async function login(values: LoginFormValues): Promise<AuthResult> {
-  await sleep(700)
-  const user = MOCK_USERS.find(u => u.email.toLowerCase() === values.email.toLowerCase())
-  if (!user) {
-    throw new Error('No account found with that email. Try candidate@demo.pk')
-  }
-  return { user, token: fakeToken(user.id) }
-}
-
-export async function register(values: RegisterFormValues): Promise<AuthResult> {
-  await sleep(900)
-  const existing = MOCK_USERS.find(u => u.email.toLowerCase() === values.email.toLowerCase())
-  if (existing) {
-    throw new Error('An account with this email already exists.')
-  }
-  const user: User = {
-    id: `user_${Date.now()}`,
+  const res = await http.post('/auth/signin', {
     email: values.email,
-    fullName: values.fullName,
-    role: values.role as UserRole,
-    phoneNumber: values.phoneNumber,
-    isVerified: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  }
-  return { user, token: fakeToken(user.id) }
+    password: values.password,
+  })
+  const payload = unwrap<AuthPayload>(res)
+  storeRefreshToken(payload.refreshToken)
+  return { user: mapUser(payload.user), token: payload.accessToken }
 }
 
-export async function requestPasswordReset(email: string): Promise<void> {
-  await sleep(700)
-  if (!email) throw new Error('Email is required')
+/** Validates the current session and returns the authenticated user. */
+export async function me(): Promise<User> {
+  const res = await http.get('/auth/me')
+  return mapUser(unwrap<SignInResponse>(res))
+}
+
+/** Revokes the current refresh token on the backend (best-effort). */
+export async function logout(): Promise<void> {
+  try {
+    await http.post('/auth/logout')
+  } catch {
+    // Ignore network/expired-token errors during logout.
+  } finally {
+    localStorage.removeItem(STORAGE_KEYS.refreshToken)
+  }
+}
+
+/** Exchanges the stored refresh token for a fresh access token. */
+export async function refresh(): Promise<string | null> {
+  const refreshToken = localStorage.getItem(STORAGE_KEYS.refreshToken)
+  if (!refreshToken) return null
+  const res = await http.post('/auth/refresh', { refreshToken })
+  const payload = unwrap<{ accessToken: string; refreshToken: string }>(res)
+  storeRefreshToken(payload.refreshToken)
+  localStorage.setItem(STORAGE_KEYS.authToken, payload.accessToken)
+  return payload.accessToken
+}
+
+/**
+ * Self-registration. Candidates register via `/auth/signup`; employers via
+ * `/employers/signup`. Both return the same auth payload (user + tokens).
+ */
+export async function register(values: RegisterFormValues): Promise<AuthResult> {
+  const parts = values.fullName.trim().split(/\s+/)
+  const firstName = parts[0] ?? values.fullName.trim()
+  const lastName = parts.slice(1).join(' ') || firstName
+  const body = { firstName, lastName, email: values.email, password: values.password }
+  const endpoint = values.role === 'employer' ? '/employers/signup' : '/auth/signup'
+  const res = await http.post(endpoint, body)
+  const payload = unwrap<AuthPayload>(res)
+  storeRefreshToken(payload.refreshToken)
+  return { user: mapUser(payload.user), token: payload.accessToken }
+}
+
+/**
+ * Password reset / email verification flows have no backend endpoints yet.
+ */
+const NOT_IMPLEMENTED =
+  'This feature is not available yet. Please contact support if you need help accessing your account.'
+
+export async function requestPasswordReset(_email: string): Promise<void> {
+  throw new Error(NOT_IMPLEMENTED)
 }
 
 export async function resetPassword(_password: string): Promise<void> {
-  await sleep(700)
+  throw new Error(NOT_IMPLEMENTED)
 }
 
 export async function verifyEmail(_code: string): Promise<void> {
-  await sleep(1200)
+  throw new Error(NOT_IMPLEMENTED)
 }

@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Camera, Linkedin, Link2, Save } from 'lucide-react'
+import { Linkedin, Link2, Save } from 'lucide-react'
 
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
@@ -15,16 +15,21 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select'
 import { PageHeader } from '@/shared/components/common/PageHeader'
+import { FileUpload } from '@/shared/components/common/FileUpload'
 import { useToast } from '@/shared/components/ui/toast'
 import { useAuthStore } from '@/app/store/auth.store'
 import { EXPERIENCE_LEVELS, JOB_CATEGORIES, PAKISTAN_CITIES } from '@/shared/constants'
 import { initials } from '@/shared/lib/utils'
+import { uploadAvatar, deleteAvatar } from '@/shared/services/uploads.api'
+import { useCandidateProfile } from '../hooks/useCandidateProfile'
 import { profileSchema, type ProfileFormValues } from '../schemas'
 
 export default function CandidateProfilePage() {
   const { toast } = useToast()
   const user = useAuthStore(s => s.user)
   const updateUser = useAuthStore(s => s.updateUser)
+  const { profile, refetch } = useCandidateProfile()
+  const avatarUrl = profile?.avatarUrl ?? user?.avatarUrl ?? null
 
   const {
     register,
@@ -74,25 +79,37 @@ export default function CandidateProfilePage() {
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         <Card className="h-fit">
           <CardContent className="flex flex-col items-center p-6 text-center">
-            <div className="relative">
-              <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-2xl font-bold text-primary">
-                {user?.avatarUrl ? (
-                  <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  initials(user?.fullName ?? 'U')
-                )}
-              </div>
-              <button
-                type="button"
-                className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow"
-                aria-label="Change photo"
-              >
-                <Camera className="h-4 w-4" />
-              </button>
+            <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-2xl font-bold text-primary">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                initials(user?.fullName ?? 'U')
+              )}
             </div>
             <h3 className="mt-4 font-semibold">{user?.fullName}</h3>
             <p className="text-sm text-muted-foreground">{watch('headline')}</p>
             <p className="mt-2 text-xs text-muted-foreground">{user?.email}</p>
+
+            <FileUpload
+              className="mt-5 w-full text-left"
+              accept="image/png,image/jpeg,image/webp"
+              hint="PNG, JPG, JPEG, WEBP up to 5MB"
+              maxSizeMB={5}
+              variant="image"
+              currentUrl={avatarUrl}
+              fileName="Profile photo"
+              upload={async (file, onProgress) => {
+                const { avatarUrl: url } = await uploadAvatar(file, onProgress)
+                updateUser({ avatarUrl: url })
+                void refetch()
+                return url
+              }}
+              onRemove={async () => {
+                await deleteAvatar()
+                updateUser({ avatarUrl: undefined })
+                void refetch()
+              }}
+            />
           </CardContent>
         </Card>
 

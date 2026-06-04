@@ -160,6 +160,7 @@ export const PAGINATION = {
 
 export const STORAGE_KEYS = {
   authToken: 'pch.auth.token',
+  refreshToken: 'pch.auth.refresh',
   authUser: 'pch.auth.user',
   theme: 'pch.theme',
   recentSearches: 'pch.recent_searches',

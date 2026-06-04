@@ -103,21 +103,7 @@ export default function LoginPage() {
         </Button>
       </form>
 
-      <div className="mt-6 rounded-lg border border-dashed border-border bg-muted/40 p-4">
-        <p className="mb-2 text-xs font-medium text-muted-foreground">Try a demo account (any password works):</p>
-        <div className="flex flex-wrap gap-2">
-          {DEMO_ACCOUNTS.map(acc => (
-            <button
-              key={acc.email}
-              type="button"
-              onClick={() => fillDemo(acc.email)}
-              className="rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium transition-colors hover:border-primary hover:text-primary"
-            >
-              {acc.role}
-            </button>
-          ))}
-        </div>
-      </div>
+ 
     </AuthShell>
   )
 }

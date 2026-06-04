@@ -13,11 +13,12 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { Eye, Target, TrendingUp, Users } from 'lucide-react'
+import { Briefcase, CheckCircle2, TrendingUp, Users } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { StatCard } from '@/shared/components/common/StatCard'
 import { PageHeader } from '@/shared/components/common/PageHeader'
+import { useEmployerDashboard } from '../hooks/useEmployerCompany'
 
 const APPLICATIONS_TREND = [
   { week: 'W1', applications: 32 },
@@ -53,15 +54,17 @@ const tooltipStyle = {
 }
 
 export default function EmployerAnalyticsPage() {
+  const { dashboard } = useEmployerDashboard()
+
   return (
     <div>
       <PageHeader title="Analytics" description="Insights into your job postings and hiring funnel." />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total Views" value="12.4k" icon={Eye} accent="info" trend={14} />
-        <StatCard label="Applications" value={350} icon={Users} accent="primary" trend={21} />
-        <StatCard label="Conversion Rate" value="2.8%" icon={Target} accent="success" trend={3} />
-        <StatCard label="Avg. Time to Hire" value="14 days" icon={TrendingUp} accent="warning" trend={-5} />
+        <StatCard label="Total Jobs" value={dashboard?.totalJobs ?? 0} icon={Briefcase} accent="info" />
+        <StatCard label="Active Jobs" value={dashboard?.activeJobs ?? 0} icon={TrendingUp} accent="primary" />
+        <StatCard label="Total Applicants" value={dashboard?.totalApplicants ?? 0} icon={Users} accent="success" />
+        <StatCard label="Hired" value={dashboard?.hiredCandidates ?? 0} icon={CheckCircle2} accent="warning" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

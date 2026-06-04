@@ -1,17 +1,16 @@
-import { MOCK_COMPANIES, getCompanyById } from '@/shared/services/mock-data'
-import { sleep } from '@/shared/lib/utils'
+import http, { unwrap } from '@/shared/services/http'
+import { mapCompany } from '@/shared/services/mappers'
+import type { BackendCompany } from '@/shared/types/domain'
 import type { Company, CompanyFilters } from '../types'
 
 export async function fetchCompanies(filters: Partial<CompanyFilters> = {}): Promise<Company[]> {
-  await sleep(400)
-  let list = [...MOCK_COMPANIES]
+  const res = await http.get('/companies', {
+    params: { page: 1, limit: 100, ...(filters.query ? { search: filters.query } : {}) },
+  })
+  let list = unwrap<BackendCompany[]>(res).map(mapCompany)
 
-  if (filters.query) {
-    const q = filters.query.toLowerCase()
-    list = list.filter(c => `${c.name} ${c.industry}`.toLowerCase().includes(q))
-  }
-  if (filters.industry) list = list.filter(c => c.industry === filters.industry)
-  if (filters.city) list = list.filter(c => c.city === filters.city)
+  if (filters.industry) list = list.filter((c) => c.industry === filters.industry)
+  if (filters.city) list = list.filter((c) => c.city === filters.city)
 
   switch (filters.sort) {
     case 'rating':
@@ -28,15 +27,24 @@ export async function fetchCompanies(filters: Partial<CompanyFilters> = {}): Pro
 }
 
 export async function fetchTopCompanies(limit = 8): Promise<Company[]> {
-  await sleep(300)
-  return [...MOCK_COMPANIES].sort((a, b) => b.openJobs - a.openJobs).slice(0, limit)
+  const res = await http.get('/companies', { params: { page: 1, limit } })
+  return unwrap<BackendCompany[]>(res)
+    .map(mapCompany)
+    .sort((a, b) => b.openJobs - a.openJobs)
+    .slice(0, limit)
 }
 
 export async function fetchCompanyById(id: string): Promise<Company | null> {
-  await sleep(300)
-  return getCompanyById(id) ?? null
+  try {
+    const res = await http.get(`/companies/${id}`)
+    return mapCompany(unwrap<BackendCompany>(res))
+  } catch {
+    return null
+  }
 }
 
-export function listIndustries(): string[] {
-  return Array.from(new Set(MOCK_COMPANIES.map(c => c.industry))).sort()
+/** Industries are derived from the loaded companies (no dedicated endpoint). */
+export async function listIndustries(): Promise<string[]> {
+  const companies = await fetchCompanies()
+  return Array.from(new Set(companies.map((c) => c.industry))).sort()
 }

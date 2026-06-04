@@ -9,6 +9,7 @@ import { StatCard } from '@/shared/components/common/StatCard'
 import { JobCard } from '@/features/jobs/components/JobCard'
 import { useApplications } from '@/features/applications/hooks/useApplications'
 import { useSavedJobs } from '@/features/jobs/hooks/useSavedJobs'
+import { useJobCollection } from '@/features/jobs/hooks/useJobs'
 import { getRecommendations, DEMO_PROFILE } from '@/features/ai/services/matching'
 import { useAuthStore } from '@/app/store/auth.store'
 import { APPLICATION_STATUSES, ROUTES } from '@/shared/constants'
@@ -27,7 +28,8 @@ export default function CandidateOverviewPage() {
   const user = useAuthStore(s => s.user)
   const { applications } = useApplications()
   const { ids } = useSavedJobs()
-  const recommendations = getRecommendations(DEMO_PROFILE, 4)
+  const { jobs: latestJobs } = useJobCollection('latest', 12)
+  const recommendations = getRecommendations(DEMO_PROFILE, latestJobs, 4)
 
   const myApplications = applications.filter(a => a.status !== 'withdrawn')
   const interviews = myApplications.filter(a => a.status === 'interview').length

@@ -12,6 +12,14 @@ export default defineConfig({
   server: {
     port: 5173,
     open: true,
+    proxy: {
+      // Forward API calls to the backend during development so the browser
+      // talks to the same origin (no CORS) and `/api/v1/...` just works.
+      '/api': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+      },
+    },
   },
   build: {
     outDir: 'dist',

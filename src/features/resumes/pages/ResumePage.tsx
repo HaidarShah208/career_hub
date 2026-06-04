@@ -18,7 +18,10 @@ import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { Progress } from '@/shared/components/ui/progress'
 import { PageHeader } from '@/shared/components/common/PageHeader'
+import { FileUpload } from '@/shared/components/common/FileUpload'
 import { useToast } from '@/shared/components/ui/toast'
+import { useCandidateProfile } from '@/features/candidates/hooks/useCandidateProfile'
+import { uploadResume, deleteResume } from '@/shared/services/uploads.api'
 
 interface ExperienceItem {
   id: string
@@ -36,6 +39,8 @@ interface EducationItem {
 
 export default function ResumePage() {
   const { toast } = useToast()
+  const { profile, refetch } = useCandidateProfile()
+  const resumeUrl = profile?.resumeUrl ?? null
   const [summary, setSummary] = useState(
     'Results-driven software engineer with 5+ years building scalable web applications using React and Node.js.',
   )
@@ -72,14 +77,20 @@ export default function ResumePage() {
         title="Resume Builder"
         description="Build a professional resume and let AI score it before you apply."
         actions={
-          <>
-            <Button variant="outline" onClick={() => toast({ title: 'Resume uploaded', variant: 'success' })}>
-              <Upload className="h-4 w-4" /> Upload PDF
-            </Button>
-            <Button onClick={() => toast({ title: 'Resume downloaded', variant: 'success' })}>
-              <Download className="h-4 w-4" /> Download
-            </Button>
-          </>
+          resumeUrl ? (
+            <>
+              <Button variant="outline" asChild>
+                <a href={resumeUrl} target="_blank" rel="noopener noreferrer">
+                  <FileText className="h-4 w-4" /> View resume
+                </a>
+              </Button>
+              <Button asChild>
+                <a href={resumeUrl} download>
+                  <Download className="h-4 w-4" /> Download
+                </a>
+              </Button>
+            </>
+          ) : undefined
         }
       />
 
@@ -208,6 +219,33 @@ export default function ResumePage() {
         </div>
 
         <div className="space-y-6 lg:sticky lg:top-20 lg:self-start">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Upload className="h-4 w-4" /> Resume file
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FileUpload
+                accept=".pdf,.doc,.docx"
+                hint="PDF, DOC, DOCX up to 10MB"
+                maxSizeMB={10}
+                variant="document"
+                currentUrl={resumeUrl}
+                fileName="My resume"
+                upload={async (file, onProgress) => {
+                  const { resumeUrl: url } = await uploadResume(file, onProgress)
+                  void refetch()
+                  return url
+                }}
+                onRemove={async () => {
+                  await deleteResume()
+                  void refetch()
+                }}
+              />
+            </CardContent>
+          </Card>
+
           <Card className="bg-gradient-to-br from-primary/10 to-emerald-500/10">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">

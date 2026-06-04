@@ -1,10 +1,6 @@
-import type { MockJob } from '@/shared/services/mock-data'
+import type { Job, WorkMode, JobType, ExperienceLevel } from '@/shared/types/domain'
 
-export type Job = MockJob
-
-export type WorkMode = Job['workMode']
-export type JobType = Job['jobType']
-export type ExperienceLevel = Job['experienceLevel']
+export type { Job, WorkMode, JobType, ExperienceLevel }
 
 export interface JobFilters {
   query: string

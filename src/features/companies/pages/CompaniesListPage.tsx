@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Building2, Search } from 'lucide-react'
 
 import { Input } from '@/shared/components/ui/input'
@@ -12,7 +12,6 @@ import {
 import { EmptyState } from '@/shared/components/common/EmptyState'
 import { CompanyCard } from '../components/CompanyCard'
 import { useCompanies } from '../hooks/useCompanies'
-import { listIndustries } from '../api/companies.api'
 import { PAKISTAN_CITIES } from '@/shared/constants'
 import { DEFAULT_COMPANY_FILTERS, type CompanyFilters } from '../types'
 
@@ -21,7 +20,10 @@ const ALL = '__all__'
 export default function CompaniesListPage() {
   const [filters, setFilters] = useState<CompanyFilters>(DEFAULT_COMPANY_FILTERS)
   const { companies, isLoading } = useCompanies(filters)
-  const industries = listIndustries()
+  const industries = useMemo(
+    () => Array.from(new Set(companies.map(c => c.industry))).sort(),
+    [companies],
+  )
 
   function patch(p: Partial<CompanyFilters>) {
     setFilters(prev => ({ ...prev, ...p }))

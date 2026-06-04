@@ -13,6 +13,7 @@ import {
 } from '@/shared/components/ui/dropdown-menu'
 import { PageHeader } from '@/shared/components/common/PageHeader'
 import { EmptyState } from '@/shared/components/common/EmptyState'
+import { JobCardSkeleton } from '@/features/jobs/components/JobCard'
 import { useToast } from '@/shared/components/ui/toast'
 import { useEmployerJobs, type EmployerJobStatus } from '../hooks/useEmployerJobs'
 import { ROUTES } from '@/shared/constants'
@@ -21,14 +22,52 @@ import { Briefcase } from 'lucide-react'
 
 const STATUS_VARIANT: Record<EmployerJobStatus, BadgeProps['variant']> = {
   active: 'success',
-  paused: 'soft-warning',
   closed: 'secondary',
   draft: 'outline',
 }
 
 export default function MyJobsPage() {
   const { toast } = useToast()
-  const { jobs, removeJob, setStatus } = useEmployerJobs()
+  const { jobs, isLoading, removeJob, publishJob, closeJob } = useEmployerJobs()
+
+  async function handleRemove(id: string) {
+    try {
+      await removeJob(id)
+      toast({ title: 'Job deleted', variant: 'success' })
+    } catch (err) {
+      toast({
+        title: 'Could not delete job',
+        description: (err as { message?: string })?.message ?? 'Please try again.',
+        variant: 'error',
+      })
+    }
+  }
+
+  async function handleStatus(id: string, action: 'publish' | 'close') {
+    try {
+      await (action === 'publish' ? publishJob(id) : closeJob(id))
+      toast({ title: action === 'publish' ? 'Job published' : 'Job closed', variant: 'success' })
+    } catch (err) {
+      toast({
+        title: 'Could not update job',
+        description: (err as { message?: string })?.message ?? 'Please try again.',
+        variant: 'error',
+      })
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div>
+        <PageHeader title="My Jobs" description="Loading your job postings…" />
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <JobCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -98,17 +137,19 @@ export default function MyJobsPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setStatus(job.id, job.status === 'active' ? 'paused' : 'active')}>
-                        {job.status === 'active' ? 'Pause job' : 'Activate job'}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setStatus(job.id, 'closed')}>Mark as closed</DropdownMenuItem>
+                      {job.status === 'active' ? (
+                        <DropdownMenuItem onClick={() => handleStatus(job.id, 'close')}>
+                          Close job
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem onClick={() => handleStatus(job.id, 'publish')}>
+                          Publish job
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="text-destructive focus:text-destructive"
-                        onClick={() => {
-                          removeJob(job.id)
-                          toast({ title: 'Job deleted', variant: 'success' })
-                        }}
+                        onClick={() => handleRemove(job.id)}
                       >
                         <Trash2 className="h-4 w-4" /> Delete
                       </DropdownMenuItem>

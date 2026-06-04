@@ -4,12 +4,14 @@ import { Sparkles } from 'lucide-react'
 import { Badge } from '@/shared/components/ui/badge'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { PageHeader } from '@/shared/components/common/PageHeader'
-import { JobCard } from '@/features/jobs/components/JobCard'
+import { JobCard, JobCardSkeleton } from '@/features/jobs/components/JobCard'
+import { useJobCollection } from '@/features/jobs/hooks/useJobs'
 import { getRecommendations, DEMO_PROFILE } from '@/features/ai/services/matching'
 
 export default function RecommendedJobsPage() {
   const [profile] = useState(DEMO_PROFILE)
-  const matches = useMemo(() => getRecommendations(profile, 18), [profile])
+  const { jobs, isLoading } = useJobCollection('latest', 30)
+  const matches = useMemo(() => getRecommendations(profile, jobs, 18), [profile, jobs])
 
   const avg = Math.round(matches.reduce((sum, m) => sum + m.score, 0) / (matches.length || 1))
 
@@ -38,9 +40,11 @@ export default function RecommendedJobsPage() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {matches.map(({ job, score }) => (
-          <JobCard key={job.id} job={job} matchScore={score} />
-        ))}
+        {isLoading
+          ? Array.from({ length: 6 }).map((_, i) => <JobCardSkeleton key={i} />)
+          : matches.map(({ job, score }) => (
+              <JobCard key={job.id} job={job} matchScore={score} />
+            ))}
       </div>
     </div>
   )
