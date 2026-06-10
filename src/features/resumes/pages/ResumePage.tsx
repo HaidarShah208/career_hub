@@ -23,6 +23,7 @@ import { PageHeader } from '@/shared/components/common/PageHeader'
 import { FileUpload } from '@/shared/components/common/FileUpload'
 import { useToast } from '@/shared/components/ui/toast'
 import { useCandidateProfile } from '@/features/candidates/hooks/useCandidateProfile'
+import { MAX_PROFILE_SKILLS } from '@/shared/constants'
 import { uploadResume, deleteResume } from '@/shared/services/uploads.api'
 
 interface ExperienceItem {
@@ -53,12 +54,20 @@ export default function ResumePage() {
   useEffect(() => {
     if (!profile) return
     setSummary(profile.bio ?? '')
-    setSkillTags(profile.skills ?? [])
+    setSkillTags((profile.skills ?? []).slice(0, MAX_PROFILE_SKILLS))
   }, [profile])
 
   function addSkill(raw: string) {
     const skill = raw.trim()
     if (!skill) return
+    if (skillTags.length >= MAX_PROFILE_SKILLS) {
+      toast({
+        title: 'Skill limit reached',
+        description: `You can add up to ${MAX_PROFILE_SKILLS} skills.`,
+        variant: 'warning',
+      })
+      return
+    }
     if (skillTags.some((s) => s.toLowerCase() === skill.toLowerCase())) {
       setSkillInput('')
       return
@@ -240,11 +249,12 @@ export default function ResumePage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Skills</CardTitle>
+              <CardTitle className="text-base">Skills ({skillTags.length}/{MAX_PROFILE_SKILLS})</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <Input
                 value={skillInput}
+                disabled={skillTags.length >= MAX_PROFILE_SKILLS}
                 onChange={(e) => setSkillInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ',') {
@@ -277,7 +287,7 @@ export default function ResumePage() {
                 </div>
               )}
               <p className="text-xs text-muted-foreground">
-                Press Enter to add each skill. Click Save to persist them to your profile.
+                Press Enter to add each skill (max {MAX_PROFILE_SKILLS}). Click Save to persist them to your profile.
               </p>
             </CardContent>
           </Card>

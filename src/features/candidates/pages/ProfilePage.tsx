@@ -19,7 +19,7 @@ import {
 import { PageHeader } from '@/shared/components/common/PageHeader'
 import { useToast } from '@/shared/components/ui/toast'
 import { useAuthStore } from '@/app/store/auth.store'
-import { EXPERIENCE_LEVELS, JOB_CATEGORIES, PAKISTAN_CITIES } from '@/shared/constants'
+import { EXPERIENCE_LEVELS, JOB_CATEGORIES, MAX_PROFILE_SKILLS, PAKISTAN_CITIES } from '@/shared/constants'
 import { initials } from '@/shared/lib/utils'
 import { uploadAvatar, deleteAvatar } from '@/shared/services/uploads.api'
 import { useCandidateProfile } from '../hooks/useCandidateProfile'
@@ -77,13 +77,21 @@ export default function CandidateProfilePage() {
       linkedin: extras.linkedin ?? '',
       portfolio: extras.portfolio ?? '',
     })
-    setSkillTags(profile.skills ?? [])
+    setSkillTags((profile.skills ?? []).slice(0, MAX_PROFILE_SKILLS))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile])
 
   function addSkill(raw: string) {
     const skill = raw.trim()
     if (!skill) return
+    if (skillTags.length >= MAX_PROFILE_SKILLS) {
+      toast({
+        title: 'Skill limit reached',
+        description: `You can add up to ${MAX_PROFILE_SKILLS} skills.`,
+        variant: 'warning',
+      })
+      return
+    }
     if (skillTags.some((s) => s.toLowerCase() === skill.toLowerCase())) {
       setSkillInput('')
       return
@@ -312,10 +320,11 @@ export default function CandidateProfilePage() {
               <Field label="Bio" error={errors.bio?.message}>
                 <Textarea rows={4} {...register('bio')} placeholder="Tell employers about yourself…" />
               </Field>
-              <Field label="Skills">
+              <Field label={`Skills (${skillTags.length}/${MAX_PROFILE_SKILLS})`}>
                 <Input
                   data-skill-input="true"
                   value={skillInput}
+                  disabled={skillTags.length >= MAX_PROFILE_SKILLS}
                   onChange={(e) => setSkillInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ',') {
@@ -348,7 +357,7 @@ export default function CandidateProfilePage() {
                   </div>
                 )}
                 <p className="mt-1.5 text-xs text-muted-foreground">
-                  Press Enter to add each skills.
+                  Press Enter to add each skill (max {MAX_PROFILE_SKILLS}). Saved when you click Save changes.
                 </p>
               </Field>
             </CardContent>

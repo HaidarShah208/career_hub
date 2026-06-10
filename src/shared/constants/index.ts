@@ -152,6 +152,8 @@ export const ROUTES = {
   adminAnalytics: '/admin/analytics',
 } as const
 
+export const MAX_PROFILE_SKILLS = 6
+
 export const PAGINATION = {
   defaultPageSize: 12,
   jobsPerPage: 10,

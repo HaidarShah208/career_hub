@@ -197,8 +197,8 @@ export function AccountSettings({ extraNotifications = [] }: AccountSettingsProp
           onEscapeKeyDown={(e) => isDeleting && e.preventDefault()}
         >
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" /> Delete account permanently?
+            <DialogTitle className="flex items-center md:text-2xl gap-1 text-destructive">
+              <AlertTriangle className="h-5 md:w-7 md:h-6 w-5" /> Delete account permanently?
             </DialogTitle>
             <DialogDescription>
               This will permanently delete your account, profile, applications
