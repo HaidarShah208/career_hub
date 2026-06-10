@@ -302,12 +302,8 @@ export default function ResumePage() {
             </CardHeader>
             <CardContent>
               <FileUpload
-                accept=".pdf,.doc,.docx"
-                hint="PDF, DOC, DOCX up to 10MB"
-                maxSizeMB={10}
-                variant="document"
+                kind="resume"
                 currentUrl={resumeUrl}
-                fileName="My resume"
                 upload={async (file, onProgress) => {
                   const { resumeUrl: url } = await uploadResume(file, onProgress)
                   void refetch()

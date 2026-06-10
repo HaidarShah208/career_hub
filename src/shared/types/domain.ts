@@ -9,6 +9,9 @@ export interface Company {
   id: string
   name: string
   slug: string
+  /** Raw uploaded logo URL from the API; null when using the generated fallback. */
+  logo: string | null
+  /** Display URL — uploaded logo or generated initials avatar. */
   logoUrl: string
   industry: string
   size: string

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { FileText, Loader2, Trash2, Upload, X } from 'lucide-react'
 
 import { Button } from '@/shared/components/ui/button'
@@ -6,58 +6,92 @@ import { Progress } from '@/shared/components/ui/progress'
 import { useToast } from '@/shared/components/ui/toast'
 import { cn } from '@/shared/lib/utils'
 
-export interface FileUploadProps {
-  /** Native input `accept` value, e.g. `image/*` or `.pdf,.doc,.docx`. */
-  accept: string
-  /** Human-readable hint, e.g. "PNG, JPG, WEBP up to 5MB". */
-  hint?: string
-  /** Max size in MB enforced client-side before upload. */
-  maxSizeMB?: number
-  /** Visual style: an image thumbnail or a document chip. */
-  variant?: 'image' | 'document'
-  /** Existing uploaded file URL (preview / view / download). */
+/** Built-in upload profiles — pass `kind` instead of repeating accept/hint/variant. */
+export const FILE_UPLOAD_KINDS = {
+  companyLogo: {
+    accept: 'image/png,image/jpeg,image/svg+xml,image/webp',
+    hint: 'PNG, JPG, SVG, WEBP up to 5MB',
+    maxSizeMB: 5,
+    variant: 'image' as const,
+    fileName: 'Company logo',
+  },
+  paymentProof: {
+    accept: 'image/png,image/jpeg,image/webp',
+    hint: 'PNG, JPG, WEBP up to 5MB',
+    maxSizeMB: 5,
+    variant: 'image' as const,
+    fileName: 'Payment screenshot',
+  },
+  resume: {
+    accept: '.pdf,.doc,.docx',
+    hint: 'PDF, DOC, DOCX up to 10MB',
+    maxSizeMB: 10,
+    variant: 'document' as const,
+    fileName: 'My resume',
+  },
+} as const
+
+export type FileUploadKind = keyof typeof FILE_UPLOAD_KINDS
+
+type FileUploadBase = {
+  /** Existing uploaded file URL (preview). Omit dicebear/fallback URLs — only real uploads. */
   currentUrl?: string | null
-  /** Display name for the document variant. */
-  fileName?: string
-  /** Disable the whole control (e.g. company not created yet). */
   disabled?: boolean
   disabledHint?: string
-  /** Performs the actual upload and returns the new file URL. */
   upload: (file: File, onProgress: (percent: number) => void) => Promise<string>
   onUploaded?: (url: string) => void
   onRemove?: () => Promise<void> | void
   className?: string
 }
 
+export type FileUploadProps = FileUploadBase &
+  (
+    | { kind: FileUploadKind; accept?: never; hint?: never; maxSizeMB?: never; variant?: never; fileName?: string }
+    | {
+        kind?: never
+        accept: string
+        hint?: string
+        maxSizeMB?: number
+        variant?: 'image' | 'document'
+        fileName?: string
+      }
+  )
+
 const ACCEPT_EXT_RE = /\.([a-z0-9]+)$/i
 
-export function FileUpload({
-  accept,
-  hint,
-  maxSizeMB = 10,
-  variant = 'document',
-  currentUrl,
-  fileName,
-  disabled = false,
-  disabledHint,
-  upload,
-  onUploaded,
-  onRemove,
-  className,
-}: FileUploadProps) {
+export function FileUpload(props: FileUploadProps) {
+  const preset = props.kind ? FILE_UPLOAD_KINDS[props.kind] : null
+  const accept = preset?.accept ?? props.accept!
+  const hint = preset?.hint ?? props.hint
+  const maxSizeMB = preset?.maxSizeMB ?? props.maxSizeMB ?? 10
+  const variant = preset?.variant ?? props.variant ?? 'document'
+  const fileName = props.fileName ?? preset?.fileName
+  const {
+    currentUrl,
+    disabled = false,
+    disabledHint,
+    upload,
+    onUploaded,
+    onRemove,
+    className,
+  } = props
+
   const { toast } = useToast()
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [isRemoving, setIsRemoving] = useState(false)
+  /** Clears preview immediately after delete, before parent refetch. */
+  const [cleared, setCleared] = useState(false)
+
+  const previewUrl = cleared ? null : (currentUrl ?? null)
 
   const validate = useCallback(
     (file: File): string | null => {
       if (file.size > maxSizeMB * 1024 * 1024) {
         return `File is too large. Maximum size is ${maxSizeMB}MB.`
       }
-      // Validate against the accept list (extensions and/or mime patterns).
       const tokens = accept.split(',').map((t) => t.trim().toLowerCase())
       const ext = (file.name.match(ACCEPT_EXT_RE)?.[1] ?? '').toLowerCase()
       const mime = file.type.toLowerCase()
@@ -79,6 +113,7 @@ export function FileUpload({
         toast({ title: 'Invalid file', description: error, variant: 'error' })
         return
       }
+      setCleared(false)
       setIsUploading(true)
       setProgress(0)
       try {
@@ -111,11 +146,14 @@ export function FileUpload({
     [disabled, isUploading, handleFile],
   )
 
-  async function handleRemove() {
+  async function handleRemove(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
     if (!onRemove) return
     setIsRemoving(true)
     try {
       await onRemove()
+      setCleared(true)
       toast({ title: 'File removed', variant: 'success' })
     } catch (err) {
       toast({
@@ -127,6 +165,11 @@ export function FileUpload({
       setIsRemoving(false)
     }
   }
+
+  // Reset cleared state when parent provides a new URL (e.g. after upload).
+  useEffect(() => {
+    if (cleared && currentUrl) setCleared(false)
+  }, [cleared, currentUrl])
 
   const open = () => {
     if (!disabled && !isUploading) inputRef.current?.click()
@@ -146,12 +189,11 @@ export function FileUpload({
         }}
       />
 
-      {/* Existing file preview */}
-      {currentUrl && !isUploading && (
+      {previewUrl && !isUploading && (
         <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 p-3">
           {variant === 'image' ? (
             <img
-              src={currentUrl}
+              src={previewUrl}
               alt="Uploaded preview"
               className="h-12 w-12 rounded-md border border-border object-cover"
             />
@@ -164,14 +206,14 @@ export function FileUpload({
             <p className="truncate text-sm font-medium">{fileName ?? 'Uploaded file'}</p>
             <div className="mt-1 flex flex-wrap gap-3 text-xs">
               <a
-                href={currentUrl}
+                href={previewUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"
               >
                 View
               </a>
-              <a href={currentUrl} download className="text-primary hover:underline">
+              <a href={previewUrl} download className="text-primary hover:underline">
                 Download
               </a>
             </div>
@@ -181,12 +223,16 @@ export function FileUpload({
               type="button"
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 shrink-0"
               onClick={handleRemove}
-              loading={isRemoving}
+              disabled={isRemoving}
               aria-label="Remove file"
             >
-              <Trash2 className="h-4 w-4 text-destructive" />
+              {isRemoving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4 text-destructive" />
+              )}
             </Button>
           )}
         </div>
@@ -224,7 +270,7 @@ export function FileUpload({
               <Upload className="h-5 w-5" />
             </span>
             <p className="text-sm font-medium">
-              {currentUrl ? 'Replace file' : 'Drag & drop or click to upload'}
+              {previewUrl ? 'Replace file' : 'Drag & drop or click to upload'}
             </p>
             {disabled && disabledHint ? (
               <p className="flex items-center gap-1 text-xs text-destructive">

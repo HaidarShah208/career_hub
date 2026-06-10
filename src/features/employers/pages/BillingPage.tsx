@@ -275,10 +275,7 @@ export default function BillingPage() {
             </div>
 
             <FileUpload
-              accept="image/*"
-              hint="PNG, JPG, WEBP up to 5MB"
-              maxSizeMB={5}
-              variant="image"
+              kind="paymentProof"
               currentUrl={screenshotUrl}
               disabled={uploading}
               upload={async (file, onProgress) => {
