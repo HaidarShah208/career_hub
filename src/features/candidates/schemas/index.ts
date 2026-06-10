@@ -9,7 +9,6 @@ export const profileSchema = z.object({
   experienceLevel: z.string().min(1, 'Select experience level'),
   category: z.string().min(1, 'Select a field'),
   bio: z.string().max(1000, 'Bio is too long').optional(),
-  skills: z.string().optional(),
   linkedin: z.string().url('Enter a valid URL').optional().or(z.literal('')),
   portfolio: z.string().url('Enter a valid URL').optional().or(z.literal('')),
 })

@@ -192,7 +192,6 @@ export function FileUpload({
         </div>
       )}
 
-      {/* Drop zone */}
       <div
         role="button"
         tabIndex={0}

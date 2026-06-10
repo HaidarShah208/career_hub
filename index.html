@@ -27,7 +27,23 @@
 </head>
 
 <body class="antialiased">
-  <div id="root"></div>
+  <div id="root">
+    <div
+      id="initial-loader"
+      style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;font-family:Inter,system-ui,sans-serif"
+    >
+      <div
+        style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#16a34a,#059669);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(22,163,74,.25)"
+      >
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+          <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path>
+        </svg>
+      </div>
+      <p style="margin-top:24px;font-size:18px;font-weight:600;color:#0f172a">Pakistan Career Hub</p>
+      <p style="margin-top:8px;font-size:14px;color:#64748b">Loading your workspace…</p>
+    </div>
+  </div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

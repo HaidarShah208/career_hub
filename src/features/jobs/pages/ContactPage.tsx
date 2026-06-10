@@ -9,9 +9,9 @@ import { Textarea } from '@/shared/components/ui/textarea'
 import { useToast } from '@/shared/components/ui/toast'
 
 const CONTACT_INFO = [
-  { icon: Mail, label: 'Email', value: 'hello@pakistancareerhub.pk' },
-  { icon: Phone, label: 'Phone (UAN)', value: '+92 21 1111 1234' },
-  { icon: MapPin, label: 'Office', value: 'Dolmen Mall, Tower-A, Clifton, Karachi' },
+  { icon: Mail, label: 'Email', value: 'alhi7896542@gmail.com' },
+  { icon: Phone, label: 'Phone', value: '+92 3107580073' },
+  { icon: MapPin, label: 'Office', value: 'Garden Town, Lahore' },
 ]
 
 export default function ContactPage() {

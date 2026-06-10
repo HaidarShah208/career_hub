@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom'
 
 import { useAuthStore } from '@/app/store/auth.store'
+import { AppSplash } from '@/shared/components/common/AppSplash'
 import { ROUTES } from '@/shared/constants'
 import type { UserRole } from '@/shared/types'
 
@@ -14,11 +15,7 @@ export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
   const { isAuthenticated, isHydrated, hasRole } = useAuthStore()
 
   if (!isHydrated) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    )
+    return <AppSplash />
   }
 
   if (!isAuthenticated) {

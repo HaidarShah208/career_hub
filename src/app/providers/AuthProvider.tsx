@@ -14,21 +14,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const setHydrated = useAuthStore(s => s.setHydrated)
 
   useEffect(() => {
-    // When the HTTP client can no longer refresh a session, clear the store.
     setAuthFailureHandler(() => useAuthStore.getState().logout())
 
-    const { token, updateUser, logout } = useAuthStore.getState()
+    function bootstrap() {
+      const { token, updateUser, logout } = useAuthStore.getState()
 
-    if (!token) {
-      setHydrated()
+      if (!token) {
+        setHydrated()
+        return
+      }
+
+      authApi
+        .me()
+        .then((user) => updateUser(user))
+        .catch(() => logout())
+        .finally(() => setHydrated())
+    }
+
+    // Wait for persisted auth state before validating the session.
+    if (useAuthStore.persist.hasHydrated()) {
+      bootstrap()
       return
     }
 
-    authApi
-      .me()
-      .then(user => updateUser(user))
-      .catch(() => logout())
-      .finally(() => setHydrated())
+    return useAuthStore.persist.onFinishHydration(() => bootstrap())
   }, [setHydrated])
 
   return <>{children}</>

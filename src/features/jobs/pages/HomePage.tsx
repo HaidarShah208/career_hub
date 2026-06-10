@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight,
@@ -26,17 +27,10 @@ import { JobSearchBar } from '../components/JobSearchBar'
 import { JobCard, JobCardSkeleton } from '../components/JobCard'
 import { CompanyCard } from '@/features/companies/components/CompanyCard'
 import { useJobCollection } from '../hooks/useJobs'
+import { useHomeStats, formatStatCount } from '../hooks/useHomeStats'
 import { useTopCompanies } from '@/features/companies/hooks/useCompanies'
+import { Skeleton } from '@/shared/components/ui/skeleton'
 import { APP_NAME, JOB_CATEGORIES, ROUTES } from '@/shared/constants'
-
-const HERO_STATS = [
-  { label: 'Active Jobs', value: '12,000+', icon: Briefcase },
-  { label: 'Companies Hiring', value: '8,400+', icon: Building2 },
-  { label: 'Professionals', value: '2.1M+', icon: Users },
-  { label: 'Jobs Filled', value: '320k+', icon: TrendingUp },
-]
-
-const POPULAR_SEARCHES = ['React Developer', 'Accountant', 'Sales Manager', 'Data Scientist', 'HR Officer', 'Remote']
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   Code2,
@@ -92,6 +86,25 @@ export default function HomePage() {
   const { jobs: featured, isLoading: featuredLoading } = useJobCollection('featured', 6)
   const { jobs: latest, isLoading: latestLoading } = useJobCollection('latest', 6)
   const { companies } = useTopCompanies(12)
+  const { stats, isLoading: statsLoading } = useHomeStats()
+
+  const heroStats = useMemo(
+    () => [
+      { label: 'Active Jobs', value: stats ? formatStatCount(stats.activeJobs) : '—', icon: Briefcase },
+      { label: 'Companies Hiring', value: stats ? formatStatCount(stats.companies) : '—', icon: Building2 },
+      { label: 'Professionals', value: stats ? formatStatCount(stats.candidates) : '—', icon: Users },
+      { label: 'Jobs Filled', value: stats ? formatStatCount(stats.hired) : '—', icon: TrendingUp },
+    ],
+    [stats],
+  )
+
+  const popularSearches = useMemo(() => {
+    const fromJobs = latest
+      .map((j) => j.title)
+      .filter((title, i, arr) => arr.indexOf(title) === i)
+      .slice(0, 6)
+    return fromJobs.length > 0 ? fromJobs : ['Software Engineer', 'Accountant', 'Remote']
+  }, [latest])
 
   return (
     <div>
@@ -129,7 +142,7 @@ export default function HomePage() {
             <JobSearchBar />
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">
               <span className="text-muted-foreground">Popular:</span>
-              {POPULAR_SEARCHES.map(term => (
+              {popularSearches.map(term => (
                 <Link
                   key={term}
                   to={`${ROUTES.jobs}?q=${encodeURIComponent(term)}`}
@@ -142,7 +155,7 @@ export default function HomePage() {
           </motion.div>
 
           <div className="mx-auto mt-12 grid max-w-4xl grid-cols-2 gap-4 sm:grid-cols-4">
-            {HERO_STATS.map(stat => {
+            {heroStats.map(stat => {
               const Icon = stat.icon
               return (
                 <div
@@ -150,7 +163,11 @@ export default function HomePage() {
                   className="flex flex-col items-center rounded-xl border border-border bg-card/60 p-4 text-center backdrop-blur"
                 >
                   <Icon className="h-5 w-5 text-primary" />
-                  <span className="mt-2 text-xl font-bold">{stat.value}</span>
+                  {statsLoading ? (
+                    <Skeleton className="mt-2 h-7 w-16" />
+                  ) : (
+                    <span className="mt-2 text-xl font-bold">{stat.value}</span>
+                  )}
                   <span className="text-xs text-muted-foreground">{stat.label}</span>
                 </div>
               )
@@ -284,28 +301,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="container pb-20">
-        <div className="overflow-hidden rounded-3xl bg-gradient-to-r from-primary-600 to-emerald-600 px-8 py-12 text-center text-white sm:px-16 sm:py-16">
-          <h2 className="text-3xl font-bold tracking-tight">Ready to take the next step?</h2>
-          <p className="mx-auto mt-3 max-w-xl text-white/90">
-            Create a free profile, let our AI match you with the right jobs, and apply with a single click.
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button asChild size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90">
-              <Link to={ROUTES.register}>Create Free Account</Link>
-            </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white"
-            >
-              <Link to={ROUTES.employerPostJob}>Post a Job</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
     </div>
   )
 }

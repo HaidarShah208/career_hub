@@ -80,5 +80,11 @@ export function useAuth() {
     navigate(ROUTES.home)
   }
 
-  return { signIn, signUp, signOut, isLoading }
+  async function deleteAccount(): Promise<void> {
+    await authApi.deleteAccount()
+    logout()
+    navigate(ROUTES.home, { replace: true })
+  }
+
+  return { signIn, signUp, signOut, deleteAccount, isLoading }
 }

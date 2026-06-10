@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Linkedin, Link2, Save } from 'lucide-react'
+import { Linkedin, Link2, Loader2, Pencil, Save, X } from 'lucide-react'
 
+import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Input } from '@/shared/components/ui/input'
@@ -16,7 +17,6 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select'
 import { PageHeader } from '@/shared/components/common/PageHeader'
-import { FileUpload } from '@/shared/components/common/FileUpload'
 import { useToast } from '@/shared/components/ui/toast'
 import { useAuthStore } from '@/app/store/auth.store'
 import { EXPERIENCE_LEVELS, JOB_CATEGORIES, PAKISTAN_CITIES } from '@/shared/constants'
@@ -33,6 +33,10 @@ export default function CandidateProfilePage() {
   const updateUser = useAuthStore(s => s.updateUser)
   const { profile, refetch, updateProfile, isSaving } = useCandidateProfile()
   const avatarUrl = profile?.avatarUrl ?? user?.avatarUrl ?? null
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const [skillInput, setSkillInput] = useState('')
+  const [skillTags, setSkillTags] = useState<string[]>([])
 
   const {
     register,
@@ -52,7 +56,6 @@ export default function CandidateProfilePage() {
       experienceLevel: 'entry',
       category: '',
       bio: '',
-      skills: '',
       linkedin: '',
       portfolio: '',
     },
@@ -71,12 +74,62 @@ export default function CandidateProfilePage() {
       experienceLevel: yearsToLevel(profile.experienceYears ?? 0),
       category: extras.category ?? '',
       bio: profile.bio ?? '',
-      skills: (profile.skills ?? []).join(', '),
       linkedin: extras.linkedin ?? '',
       portfolio: extras.portfolio ?? '',
     })
+    setSkillTags(profile.skills ?? [])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile])
+
+  function addSkill(raw: string) {
+    const skill = raw.trim()
+    if (!skill) return
+    if (skillTags.some((s) => s.toLowerCase() === skill.toLowerCase())) {
+      setSkillInput('')
+      return
+    }
+    setSkillTags((prev) => [...prev, skill])
+    setSkillInput('')
+  }
+
+  function removeSkill(skill: string) {
+    setSkillTags((prev) => prev.filter((s) => s !== skill))
+  }
+
+  async function handleAvatarPick(file: File) {
+    const allowed = ['image/png', 'image/jpeg', 'image/webp']
+    if (!allowed.includes(file.type)) {
+      toast({ title: 'Invalid file', description: 'Use PNG, JPG, or WEBP.', variant: 'error' })
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Maximum size is 5MB.', variant: 'error' })
+      return
+    }
+    setIsUploadingAvatar(true)
+    try {
+      const { avatarUrl: url } = await uploadAvatar(file)
+      updateUser({ avatarUrl: url })
+      void refetch()
+      toast({ title: 'Profile photo updated', variant: 'success' })
+    } catch (err) {
+      toast({
+        title: 'Upload failed',
+        description: (err as { message?: string })?.message ?? 'Please try again.',
+        variant: 'error',
+      })
+    } finally {
+      setIsUploadingAvatar(false)
+      if (avatarInputRef.current) avatarInputRef.current.value = ''
+    }
+  }
+
+  function handleFormKeyDown(e: KeyboardEvent<HTMLFormElement>) {
+    const target = e.target as HTMLElement
+    if (e.key === 'Enter' && target.tagName === 'INPUT' && target.getAttribute('data-skill-input') !== 'true') {
+      e.preventDefault()
+    }
+  }
 
   const city = watch('city')
   const experienceLevel = watch('experienceLevel')
@@ -87,10 +140,7 @@ export default function CandidateProfilePage() {
       await updateProfile({
         headline: values.headline || undefined,
         bio: values.bio || undefined,
-        skills: (values.skills ?? '')
-          .split(',')
-          .map(s => s.trim())
-          .filter(Boolean),
+        skills: skillTags,
         experienceYears: levelToYears(values.experienceLevel as never),
         city: values.city || undefined,
       })
@@ -112,7 +162,7 @@ export default function CandidateProfilePage() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form onSubmit={handleSubmit(onSubmit)} onKeyDown={handleFormKeyDown}>
       <PageHeader
         title="My Profile"
         description="Keep your profile up to date to get better job matches."
@@ -126,37 +176,68 @@ export default function CandidateProfilePage() {
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         <Card className="h-fit">
           <CardContent className="flex flex-col items-center p-6 text-center">
-            <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-2xl font-bold text-primary">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-              ) : (
-                initials(user?.fullName ?? 'U')
-              )}
+            <div className="relative">
+              <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-2xl font-bold text-primary">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  initials(user?.fullName ?? 'U')
+                )}
+                {isUploadingAvatar && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-full bg-background/70">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={isUploadingAvatar}
+                className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow-md transition-transform hover:scale-105 disabled:opacity-60"
+                aria-label="Change profile photo"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                disabled={isUploadingAvatar}
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) void handleAvatarPick(file)
+                }}
+              />
             </div>
             <h3 className="mt-4 font-semibold">{user?.fullName}</h3>
             <p className="text-sm text-muted-foreground">{watch('headline')}</p>
             <p className="mt-2 text-xs text-muted-foreground">{user?.email}</p>
-
-            <FileUpload
-              className="mt-5 w-full text-left"
-              accept="image/png,image/jpeg,image/webp"
-              hint="PNG, JPG, JPEG, WEBP up to 5MB"
-              maxSizeMB={5}
-              variant="image"
-              currentUrl={avatarUrl}
-              fileName="Profile photo"
-              upload={async (file, onProgress) => {
-                const { avatarUrl: url } = await uploadAvatar(file, onProgress)
-                updateUser({ avatarUrl: url })
-                void refetch()
-                return url
-              }}
-              onRemove={async () => {
-                await deleteAvatar()
-                updateUser({ avatarUrl: undefined })
-                void refetch()
-              }}
-            />
+            {avatarUrl && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="mt-3 text-xs text-muted-foreground"
+                disabled={isUploadingAvatar}
+                onClick={async () => {
+                  try {
+                    await deleteAvatar()
+                    updateUser({ avatarUrl: undefined })
+                    void refetch()
+                    toast({ title: 'Profile photo removed', variant: 'success' })
+                  } catch (err) {
+                    toast({
+                      title: 'Could not remove photo',
+                      description: (err as { message?: string })?.message ?? 'Please try again.',
+                      variant: 'error',
+                    })
+                  }
+                }}
+              >
+                Remove photo
+              </Button>
+            )}
           </CardContent>
         </Card>
 
@@ -231,8 +312,44 @@ export default function CandidateProfilePage() {
               <Field label="Bio" error={errors.bio?.message}>
                 <Textarea rows={4} {...register('bio')} placeholder="Tell employers about yourself…" />
               </Field>
-              <Field label="Skills (comma separated)" error={errors.skills?.message}>
-                <Input {...register('skills')} placeholder="React, TypeScript, Node.js" />
+              <Field label="Skills">
+                <Input
+                  data-skill-input="true"
+                  value={skillInput}
+                  onChange={(e) => setSkillInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ',') {
+                      e.preventDefault()
+                      addSkill(skillInput)
+                    } else if (e.key === 'Backspace' && !skillInput && skillTags.length > 0) {
+                      removeSkill(skillTags[skillTags.length - 1])
+                    }
+                  }}
+                  onBlur={() => {
+                    if (skillInput.trim()) addSkill(skillInput)
+                  }}
+                  placeholder="Type a skill and press Enter"
+                />
+                {skillTags.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {skillTags.map((skill) => (
+                      <Badge key={skill} variant="secondary" className="gap-1 pr-1">
+                        {skill}
+                        <button
+                          type="button"
+                          onClick={() => removeSkill(skill)}
+                          className="rounded-full p-0.5 hover:bg-muted"
+                          aria-label={`Remove ${skill}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Press Enter to add each skills.
+                </p>
               </Field>
             </CardContent>
           </Card>

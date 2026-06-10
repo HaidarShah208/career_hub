@@ -77,6 +77,12 @@ export async function logout(): Promise<void> {
   }
 }
 
+/** Permanently deletes the authenticated account and all related data. */
+export async function deleteAccount(): Promise<void> {
+  await http.delete('/users/me')
+  localStorage.removeItem(STORAGE_KEYS.refreshToken)
+}
+
 /** Exchanges the stored refresh token for a fresh access token. */
 export async function refresh(): Promise<string | null> {
   const refreshToken = localStorage.getItem(STORAGE_KEYS.refreshToken)

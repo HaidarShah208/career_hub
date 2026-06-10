@@ -8,6 +8,7 @@ import {
   Sparkles,
   Trash2,
   Upload,
+  X,
   Briefcase as BriefcaseIcon,
 } from 'lucide-react'
 
@@ -43,7 +44,8 @@ export default function ResumePage() {
   const { profile, refetch, updateProfile, isSaving } = useCandidateProfile()
   const resumeUrl = profile?.resumeUrl ?? null
   const [summary, setSummary] = useState('')
-  const [skills, setSkills] = useState('')
+  const [skillInput, setSkillInput] = useState('')
+  const [skillTags, setSkillTags] = useState<string[]>([])
   const [experience, setExperience] = useState<ExperienceItem[]>([])
   const [education, setEducation] = useState<EducationItem[]>([])
 
@@ -51,10 +53,25 @@ export default function ResumePage() {
   useEffect(() => {
     if (!profile) return
     setSummary(profile.bio ?? '')
-    setSkills((profile.skills ?? []).join(', '))
+    setSkillTags(profile.skills ?? [])
   }, [profile])
 
-  const skillCount = skills.split(',').map(s => s.trim()).filter(Boolean).length
+  function addSkill(raw: string) {
+    const skill = raw.trim()
+    if (!skill) return
+    if (skillTags.some((s) => s.toLowerCase() === skill.toLowerCase())) {
+      setSkillInput('')
+      return
+    }
+    setSkillTags((prev) => [...prev, skill])
+    setSkillInput('')
+  }
+
+  function removeSkill(skill: string) {
+    setSkillTags((prev) => prev.filter((s) => s !== skill))
+  }
+
+  const skillCount = skillTags.length
   const checks = [
     { label: 'Professional summary added', done: summary.trim().length >= 30 },
     { label: 'At least 5 relevant skills', done: skillCount >= 5 },
@@ -67,7 +84,7 @@ export default function ResumePage() {
     try {
       await updateProfile({
         bio: summary || undefined,
-        skills: skills.split(',').map(s => s.trim()).filter(Boolean),
+        skills: skillTags,
       })
       void refetch()
       toast({ title: 'Resume saved', variant: 'success' })
@@ -226,18 +243,42 @@ export default function ResumePage() {
               <CardTitle className="text-base">Skills</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Input value={skills} onChange={e => setSkills(e.target.value)} placeholder="Comma separated skills" />
-              <div className="flex flex-wrap gap-1.5">
-                {skills
-                  .split(',')
-                  .map(s => s.trim())
-                  .filter(Boolean)
-                  .map(s => (
-                    <Badge key={s} variant="soft">
-                      {s}
+              <Input
+                value={skillInput}
+                onChange={(e) => setSkillInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault()
+                    addSkill(skillInput)
+                  } else if (e.key === 'Backspace' && !skillInput && skillTags.length > 0) {
+                    removeSkill(skillTags[skillTags.length - 1])
+                  }
+                }}
+                onBlur={() => {
+                  if (skillInput.trim()) addSkill(skillInput)
+                }}
+                placeholder="Type a skill and press Enter"
+              />
+              {skillTags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {skillTags.map((skill) => (
+                    <Badge key={skill} variant="soft" className="gap-1 pr-1">
+                      {skill}
+                      <button
+                        type="button"
+                        onClick={() => removeSkill(skill)}
+                        className="rounded-full p-0.5 hover:bg-muted"
+                        aria-label={`Remove ${skill}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
                     </Badge>
                   ))}
-              </div>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Press Enter to add each skill. Click Save to persist them to your profile.
+              </p>
             </CardContent>
           </Card>
         </div>

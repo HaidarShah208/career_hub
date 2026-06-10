@@ -77,9 +77,11 @@ export async function fetchJobById(id: string): Promise<Job | null> {
 
 export async function fetchFeaturedJobs(limit = 6): Promise<Job[]> {
   const res = await http.get('/jobs', {
-    params: { page: 1, limit, status: 'PUBLISHED', sortOrder: 'DESC' },
+    params: { page: 1, limit: 50, status: 'PUBLISHED', sortOrder: 'DESC' },
   })
-  return unwrap<BackendJob[]>(res).map(mapJob)
+  const jobs = unwrap<BackendJob[]>(res).map(mapJob)
+  const featured = jobs.filter((j) => j.isFeatured)
+  return (featured.length ? featured : jobs).slice(0, limit)
 }
 
 export async function fetchLatestJobs(limit = 8): Promise<Job[]> {

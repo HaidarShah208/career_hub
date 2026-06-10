@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bell, Globe, Lock, LogOut, Moon, Shield, Trash2 } from 'lucide-react'
+import { AlertTriangle, Bell, Globe, Loader2, Lock, LogOut, Moon, Shield, Trash2 } from 'lucide-react'
 
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
@@ -7,11 +7,20 @@ import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Switch } from '@/shared/components/ui/switch'
 import { Separator } from '@/shared/components/ui/separator'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/components/ui/dialog'
 import { PageHeader } from '@/shared/components/common/PageHeader'
 import { useToast } from '@/shared/components/ui/toast'
 import { useThemeStore } from '@/app/store/theme.store'
 import { useAuthStore } from '@/app/store/auth.store'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { cn } from '@/shared/lib/utils'
 
 interface AccountSettingsProps {
   extraNotifications?: { id: string; label: string; description: string; default?: boolean }[]
@@ -26,9 +35,11 @@ const BASE_NOTIFICATIONS = [
 
 export function AccountSettings({ extraNotifications = [] }: AccountSettingsProps) {
   const { toast } = useToast()
-  const { signOut } = useAuth()
+  const { signOut, deleteAccount } = useAuth()
   const user = useAuthStore(s => s.user)
   const { theme, setTheme } = useThemeStore()
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [notifications, setNotifications] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(
       [...BASE_NOTIFICATIONS, ...extraNotifications].map(n => [n.id, n.default ?? false]),
@@ -36,6 +47,23 @@ export function AccountSettings({ extraNotifications = [] }: AccountSettingsProp
   )
 
   const allNotifications = [...BASE_NOTIFICATIONS, ...extraNotifications]
+
+  async function handleDeleteAccount() {
+    setIsDeleting(true)
+    try {
+      await deleteAccount()
+      setDeleteOpen(false)
+      toast({ title: 'Account deleted', description: 'Your account and data have been permanently removed.', variant: 'success' })
+    } catch (err) {
+      toast({
+        title: 'Could not delete account',
+        description: (err as { message?: string })?.message ?? 'Please try again.',
+        variant: 'error',
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   return (
     <div>
@@ -149,15 +177,51 @@ export function AccountSettings({ extraNotifications = [] }: AccountSettingsProp
             <Button
               variant="ghost"
               className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={() =>
-                toast({ title: 'Account deletion', description: 'This is disabled in the demo.', variant: 'warning' })
-              }
+              onClick={() => setDeleteOpen(true)}
             >
               <Trash2 className="h-4 w-4" /> Delete account
             </Button>
           </CardContent>
         </Card>
       </div>
+
+      <Dialog
+        open={deleteOpen}
+        onOpenChange={(open) => {
+          if (!isDeleting) setDeleteOpen(open)
+        }}
+      >
+        <DialogContent
+          className={cn(isDeleting && '[&>button]:pointer-events-none [&>button]:opacity-40')}
+          onPointerDownOutside={(e) => isDeleting && e.preventDefault()}
+          onEscapeKeyDown={(e) => isDeleting && e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" /> Delete account permanently?
+            </DialogTitle>
+            <DialogDescription>
+              This will permanently delete your account, profile, applications
+              {user?.role === 'employer' ? ', company, and job postings' : ''}, and uploaded files.
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" disabled={isDeleting} onClick={() => setDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" disabled={isDeleting} onClick={() => void handleDeleteAccount()}>
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Deleting…
+                </>
+              ) : (
+                'Yes, delete my account'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
