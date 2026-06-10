@@ -129,6 +129,7 @@ export interface BackendCompany {
   companySize?: string | null
   foundedYear?: number | null
   ownerId: string
+  isVerified?: boolean
   jobs?: BackendJob[]
   createdAt: string
   updatedAt: string

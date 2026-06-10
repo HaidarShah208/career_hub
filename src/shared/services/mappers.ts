@@ -45,7 +45,7 @@ export function mapCompany(c: BackendCompany): Company {
     city: c.location || '',
     website: c.website || '',
     description: c.description || '',
-    isVerified: true,
+    isVerified: c.isVerified ?? true,
     rating: 0,
     reviewCount: 0,
     openJobs: c.jobs?.length ?? 0,

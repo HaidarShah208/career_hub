@@ -11,29 +11,15 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { Activity, Eye, MousePointerClick, Users } from 'lucide-react'
+import { Activity, Eye, FileText, Users } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { StatCard } from '@/shared/components/common/StatCard'
 import { PageHeader } from '@/shared/components/common/PageHeader'
+import { PageLoader } from '@/shared/components/common/PageLoader'
+import { useAdminAnalytics } from '../hooks/useAdminData'
 
-const TRAFFIC = [
-  { day: 'Mon', visitors: 4200, signups: 120 },
-  { day: 'Tue', visitors: 5100, signups: 160 },
-  { day: 'Wed', visitors: 4800, signups: 140 },
-  { day: 'Thu', visitors: 6200, signups: 210 },
-  { day: 'Fri', visitors: 7100, signups: 260 },
-  { day: 'Sat', visitors: 5400, signups: 180 },
-  { day: 'Sun', visitors: 4000, signups: 110 },
-]
-
-const DEVICES = [
-  { name: 'Mobile', value: 62 },
-  { name: 'Desktop', value: 31 },
-  { name: 'Tablet', value: 7 },
-]
-
-const COLORS = ['hsl(var(--primary))', '#3b82f6', '#f59e0b']
+const COLORS = ['hsl(var(--primary))', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#10b981']
 
 const tooltipStyle = {
   background: 'hsl(var(--card))',
@@ -43,60 +29,132 @@ const tooltipStyle = {
 }
 
 export default function AdminAnalyticsPage() {
+  const { analytics, isLoading } = useAdminAnalytics()
+
+  if (isLoading) return <PageLoader />
+
+  const traffic = analytics?.trafficByDay ?? []
+  const roleData = analytics?.usersByRole ?? []
+  const categoryData = analytics?.jobsByCategory ?? []
+  const hasTraffic = traffic.some((d) => d.signups > 0 || d.applications > 0)
+
   return (
     <div>
-      <PageHeader title="Site Analytics" description="Traffic, engagement, and acquisition insights." />
+      <PageHeader title="Site Analytics" description="Live platform activity from the database." />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Weekly Visitors" value="36.8k" icon={Users} accent="primary" trend={12} />
-        <StatCard label="Page Views" value="142k" icon={Eye} accent="info" trend={9} />
-        <StatCard label="Avg. Session" value="4m 32s" icon={Activity} accent="success" trend={4} />
-        <StatCard label="Click-through Rate" value="6.4%" icon={MousePointerClick} accent="warning" trend={-1} />
+        <StatCard label="Total Users" value={analytics?.totalUsers ?? 0} icon={Users} accent="primary" />
+        <StatCard label="Job Page Views" value={analytics?.totalJobViews ?? 0} icon={Eye} accent="info" />
+        <StatCard
+          label="Sign-ups (7 days)"
+          value={analytics?.weeklySignups ?? 0}
+          icon={Activity}
+          accent="success"
+        />
+        <StatCard
+          label="Applications (7 days)"
+          value={analytics?.weeklyApplications ?? 0}
+          icon={FileText}
+          accent="warning"
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Traffic & sign-ups</CardTitle>
+            <CardTitle className="text-base">Sign-ups & applications (7 days)</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={TRAFFIC}>
-                <defs>
-                  <linearGradient id="visGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
-                <XAxis dataKey="day" className="text-xs" tickLine={false} axisLine={false} />
-                <YAxis className="text-xs" tickLine={false} axisLine={false} width={40} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Area type="monotone" dataKey="visitors" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#visGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {hasTraffic ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={traffic}>
+                  <defs>
+                    <linearGradient id="signupGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+                  <XAxis dataKey="day" className="text-xs" tickLine={false} axisLine={false} />
+                  <YAxis className="text-xs" tickLine={false} axisLine={false} width={40} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Area
+                    type="monotone"
+                    dataKey="signups"
+                    name="Sign-ups"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    fill="url(#signupGrad)"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="applications"
+                    name="Applications"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    fill="transparent"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
+                No activity in the last 7 days yet.
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Devices</CardTitle>
+            <CardTitle className="text-base">Users by role</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie data={DEVICES} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} innerRadius={50}>
-                  {DEVICES.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v}%`} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-              </PieChart>
-            </ResponsiveContainer>
+            {roleData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={roleData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={90}
+                    innerRadius={50}
+                  >
+                    {roleData.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
+                No users yet.
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {categoryData.length > 0 && (
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-base">Jobs by category</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {categoryData.map((cat) => (
+                  <div key={cat.name} className="rounded-lg border border-border p-3">
+                    <p className="text-xs text-muted-foreground">{cat.name}</p>
+                    <p className="text-xl font-bold tabular-nums">{cat.value}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )
