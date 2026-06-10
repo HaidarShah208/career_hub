@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -33,6 +33,7 @@ import { Separator } from '@/shared/components/ui/separator'
 import { PageLoader } from '@/shared/components/common/PageLoader'
 import { useToast } from '@/shared/components/ui/toast'
 import { JobCard } from '../components/JobCard'
+import { recordJobView } from '../api/jobs.api'
 import { useJob } from '../hooks/useJobs'
 import { useSavedJobs } from '../hooks/useSavedJobs'
 import { useApplications } from '@/features/applications/hooks/useApplications'
@@ -60,6 +61,14 @@ export default function JobDetailsPage() {
 
   const [applyOpen, setApplyOpen] = useState(false)
   const [coverLetter, setCoverLetter] = useState('')
+
+  useEffect(() => {
+    if (!job?.id || job.backendStatus !== 'PUBLISHED') return
+    const key = `pch.viewed.${job.id}`
+    if (sessionStorage.getItem(key)) return
+    sessionStorage.setItem(key, '1')
+    recordJobView(job.id).catch(() => {})
+  }, [job?.id, job?.backendStatus])
 
   if (isLoading) return <PageLoader />
   if (error || !job) {

@@ -1,7 +1,9 @@
-import type { KeyboardEvent } from 'react'
+import { useEffect, useState, type KeyboardEvent } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { X } from 'lucide-react'
 
+import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Input } from '@/shared/components/ui/input'
@@ -15,10 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
+import { useToast } from '@/shared/components/ui/toast'
 import {
   EXPERIENCE_LEVELS,
   JOB_CATEGORIES,
   JOB_TYPES,
+  MAX_JOB_SKILLS,
   PAKISTAN_CITIES,
   WORK_MODES,
 } from '@/shared/constants'
@@ -55,6 +59,17 @@ function FieldError({ message }: { message?: string }) {
 }
 
 export function JobForm({ defaultValues, submitLabel, onSubmit }: JobFormProps) {
+  const { toast } = useToast()
+  const mergedDefaults = { ...FALLBACK, ...defaultValues }
+  const [skillInput, setSkillInput] = useState('')
+  const [skillTags, setSkillTags] = useState<string[]>(() =>
+    mergedDefaults.skills
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, MAX_JOB_SKILLS),
+  )
+
   const {
     register,
     handleSubmit,
@@ -63,8 +78,38 @@ export function JobForm({ defaultValues, submitLabel, onSubmit }: JobFormProps) 
     formState: { errors, isSubmitting },
   } = useForm<PostJobFormValues>({
     resolver: zodResolver(postJobSchema),
-    defaultValues: { ...FALLBACK, ...defaultValues },
+    defaultValues: mergedDefaults,
   })
+
+  useEffect(() => {
+    setValue('skills', skillTags.join(', '), { shouldValidate: skillTags.length > 0 })
+  }, [skillTags, setValue])
+
+  function addSkill(raw: string) {
+    const skill = raw.trim()
+    if (!skill) {
+      setSkillInput('')
+      return
+    }
+    if (skillTags.length >= MAX_JOB_SKILLS) {
+      toast({
+        title: 'Skill limit reached',
+        description: `You can add up to ${MAX_JOB_SKILLS} skills.`,
+        variant: 'error',
+      })
+      return
+    }
+    if (skillTags.some((s) => s.toLowerCase() === skill.toLowerCase())) {
+      setSkillInput('')
+      return
+    }
+    setSkillTags((prev) => [...prev, skill])
+    setSkillInput('')
+  }
+
+  function removeSkill(skill: string) {
+    setSkillTags((prev) => prev.filter((s) => s !== skill))
+  }
 
   const selects: {
     name: keyof PostJobFormValues
@@ -83,7 +128,7 @@ export function JobForm({ defaultValues, submitLabel, onSubmit }: JobFormProps) 
   // only happen via the explicit button. Textareas keep normal Enter handling.
   function handleKeyDown(e: KeyboardEvent<HTMLFormElement>) {
     const target = e.target as HTMLElement
-    if (e.key === 'Enter' && target.tagName === 'INPUT') {
+    if (e.key === 'Enter' && target.tagName === 'INPUT' && target.getAttribute('data-skill-input') !== 'true') {
       e.preventDefault()
     }
   }
@@ -151,8 +196,48 @@ export function JobForm({ defaultValues, submitLabel, onSubmit }: JobFormProps) 
             <FieldError message={errors.description?.message} />
           </div>
           <div>
-            <Label className="mb-1.5 block">Required skills (comma separated)</Label>
-            <Input placeholder="React, TypeScript, Node.js" {...register('skills')} />
+            <Label className="mb-1.5 block">
+              Required skills ({skillTags.length}/{MAX_JOB_SKILLS})
+            </Label>
+            <Input
+              data-skill-input="true"
+              value={skillInput}
+              disabled={skillTags.length >= MAX_JOB_SKILLS}
+              onChange={(e) => setSkillInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ',') {
+                  e.preventDefault()
+                  addSkill(skillInput)
+                } else if (e.key === 'Backspace' && !skillInput && skillTags.length > 0) {
+                  removeSkill(skillTags[skillTags.length - 1])
+                }
+              }}
+              onBlur={() => {
+                if (skillInput.trim()) addSkill(skillInput)
+              }}
+              placeholder="Type a skill and press Enter"
+            />
+            <input type="hidden" {...register('skills')} />
+            {skillTags.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {skillTags.map((skill) => (
+                  <Badge key={skill} variant="secondary" className="gap-1 pr-1">
+                    {skill}
+                    <button
+                      type="button"
+                      onClick={() => removeSkill(skill)}
+                      className="rounded-full p-0.5 hover:bg-muted"
+                      aria-label={`Remove ${skill}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Press Enter to add each skill (max {MAX_JOB_SKILLS}).
+            </p>
             <FieldError message={errors.skills?.message} />
           </div>
         </CardContent>

@@ -75,6 +75,11 @@ export async function fetchJobById(id: string): Promise<Job | null> {
   }
 }
 
+/** Records a single view per browser session when a job detail page is opened. */
+export async function recordJobView(id: string): Promise<void> {
+  await http.post(`/jobs/${id}/view`)
+}
+
 export async function fetchFeaturedJobs(limit = 6): Promise<Job[]> {
   const res = await http.get('/jobs', {
     params: { page: 1, limit: 50, status: 'PUBLISHED', sortOrder: 'DESC' },

@@ -164,6 +164,19 @@ export interface EmployerDashboard {
   recentApplications: Application[]
 }
 
+export interface EmployerAnalytics {
+  totalJobViews: number
+  applicationsByMonth: Array<{ month: string; applications: number }>
+  applicationsByWeek: Array<{ week: string; applications: number }>
+  applicantsByStatus: Array<{ name: string; value: number }>
+  jobPerformance: Array<{ jobId: string; job: string; views: number; applies: number }>
+}
+
+export async function getEmployerAnalytics(): Promise<EmployerAnalytics> {
+  const res = await http.get('/employer/analytics')
+  return unwrap<EmployerAnalytics>(res)
+}
+
 export async function getEmployerDashboard(): Promise<EmployerDashboard> {
   const res = await http.get('/employer/dashboard')
   const data = unwrap<{

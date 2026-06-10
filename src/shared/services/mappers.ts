@@ -110,7 +110,7 @@ export function mapJob(j: BackendJob): Job {
     postedAt: j.createdAt,
     expiresAt: addDays(j.createdAt, 30),
     applicants: 0,
-    views: 0,
+    views: j.viewCount ?? 0,
     isFeatured: Boolean(j.isFeatured),
     isUrgent: Boolean(j.isUrgent),
     isGovernment: false,

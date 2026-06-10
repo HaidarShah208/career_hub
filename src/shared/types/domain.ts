@@ -139,6 +139,7 @@ export interface BackendJob {
   applyUrl?: string | null
   isUrgent?: boolean | null
   isFeatured?: boolean | null
+  viewCount?: number | null
   status: BackendJobStatus
   companyId: string
   company?: BackendCompany

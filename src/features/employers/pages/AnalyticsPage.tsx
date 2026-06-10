@@ -18,33 +18,10 @@ import { Briefcase, CheckCircle2, TrendingUp, Users } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { StatCard } from '@/shared/components/common/StatCard'
 import { PageHeader } from '@/shared/components/common/PageHeader'
-import { useEmployerDashboard } from '../hooks/useEmployerCompany'
+import { PageLoader } from '@/shared/components/common/PageLoader'
+import { useEmployerAnalytics, useEmployerDashboard } from '../hooks/useEmployerCompany'
 
-const APPLICATIONS_TREND = [
-  { week: 'W1', applications: 32 },
-  { week: 'W2', applications: 48 },
-  { week: 'W3', applications: 41 },
-  { week: 'W4', applications: 67 },
-  { week: 'W5', applications: 73 },
-  { week: 'W6', applications: 89 },
-]
-
-const SOURCE_DATA = [
-  { name: 'Search', value: 42 },
-  { name: 'Recommended', value: 28 },
-  { name: 'Direct', value: 18 },
-  { name: 'Referral', value: 12 },
-]
-
-const JOB_PERFORMANCE = [
-  { job: 'React Dev', views: 1200, applies: 86 },
-  { job: 'Backend', views: 980, applies: 64 },
-  { job: 'Designer', views: 750, applies: 41 },
-  { job: 'PM', views: 640, applies: 33 },
-  { job: 'QA', views: 510, applies: 22 },
-]
-
-const COLORS = ['hsl(var(--primary))', '#3b82f6', '#f59e0b', '#8b5cf6']
+const COLORS = ['hsl(var(--primary))', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#10b981']
 
 const tooltipStyle = {
   background: 'hsl(var(--card))',
@@ -53,8 +30,27 @@ const tooltipStyle = {
   fontSize: 12,
 }
 
+function ChartEmpty({ message }: { message: string }) {
+  return (
+    <div className="flex h-full min-h-[220px] items-center justify-center text-center text-sm text-muted-foreground">
+      {message}
+    </div>
+  )
+}
+
 export default function EmployerAnalyticsPage() {
   const { dashboard } = useEmployerDashboard()
+  const { analytics, isLoading } = useEmployerAnalytics()
+
+  const weekData = analytics?.applicationsByWeek ?? []
+  const statusData = analytics?.applicantsByStatus ?? []
+  const jobData = analytics?.jobPerformance ?? []
+
+  const hasWeekData = weekData.some((d) => d.applications > 0)
+  const hasStatusData = statusData.length > 0
+  const hasJobData = jobData.length > 0
+
+  if (isLoading) return <PageLoader />
 
   return (
     <div>
@@ -73,34 +69,56 @@ export default function EmployerAnalyticsPage() {
             <CardTitle className="text-base">Applications trend</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={APPLICATIONS_TREND}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
-                <XAxis dataKey="week" className="text-xs" tickLine={false} axisLine={false} />
-                <YAxis className="text-xs" tickLine={false} axisLine={false} width={32} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Line type="monotone" dataKey="applications" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            {hasWeekData ? (
+              <ResponsiveContainer width="100%" height={260}>
+                <LineChart data={weekData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+                  <XAxis dataKey="week" className="text-xs" tickLine={false} axisLine={false} />
+                  <YAxis className="text-xs" tickLine={false} axisLine={false} width={32} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Line
+                    type="monotone"
+                    dataKey="applications"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2.5}
+                    dot={{ r: 3 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <ChartEmpty message="No applications in the last 6 weeks" />
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Applicant sources</CardTitle>
+            <CardTitle className="text-base">Applicant pipeline</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
-              <PieChart>
-                <Pie data={SOURCE_DATA} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} innerRadius={50}>
-                  {SOURCE_DATA.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={tooltipStyle} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-              </PieChart>
-            </ResponsiveContainer>
+            {hasStatusData ? (
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie
+                    data={statusData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={90}
+                    innerRadius={50}
+                  >
+                    {statusData.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <ChartEmpty message="No applicants yet" />
+            )}
           </CardContent>
         </Card>
 
@@ -109,17 +127,27 @@ export default function EmployerAnalyticsPage() {
             <CardTitle className="text-base">Job performance</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={JOB_PERFORMANCE}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
-                <XAxis dataKey="job" className="text-xs" tickLine={false} axisLine={false} />
-                <YAxis className="text-xs" tickLine={false} axisLine={false} width={40} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="views" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="applies" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {hasJobData ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={jobData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+                  <XAxis dataKey="job" className="text-xs" tickLine={false} axisLine={false} />
+                  <YAxis className="text-xs" tickLine={false} axisLine={false} width={40} />
+                  <Tooltip
+                    contentStyle={tooltipStyle}
+                    formatter={(value: number, name: string) => {
+                      if (name === 'views' && value === 0) return ['Not visited', 'Views']
+                      return [value, name === 'views' ? 'Views' : 'Applies']
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="views" name="Views" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="applies" name="Applies" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <ChartEmpty message="Post a job to see performance data" />
+            )}
           </CardContent>
         </Card>
       </div>

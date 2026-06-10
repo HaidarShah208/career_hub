@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
   createMyCompany,
+  getEmployerAnalytics,
   getEmployerDashboard,
   getMyCompany,
   updateMyCompany,
@@ -11,6 +12,7 @@ import {
 export const employerCompanyKeys = {
   company: ['employer', 'company'] as const,
   dashboard: ['employer', 'dashboard'] as const,
+  analytics: ['employer', 'analytics'] as const,
 }
 
 /** The employer's single company (null until they create one). */
@@ -54,6 +56,20 @@ export function useEmployerDashboard() {
   })
   return {
     dashboard: query.data ?? null,
+    isLoading: query.isLoading,
+    isError: query.isError,
+  }
+}
+
+/** Charts and performance metrics for overview + analytics pages. */
+export function useEmployerAnalytics() {
+  const query = useQuery({
+    queryKey: employerCompanyKeys.analytics,
+    queryFn: getEmployerAnalytics,
+    retry: false,
+  })
+  return {
+    analytics: query.data ?? null,
     isLoading: query.isLoading,
     isError: query.isError,
   }

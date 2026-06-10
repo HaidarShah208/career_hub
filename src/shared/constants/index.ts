@@ -153,6 +153,7 @@ export const ROUTES = {
 } as const
 
 export const MAX_PROFILE_SKILLS = 6
+export const MAX_JOB_SKILLS = 10
 
 export const PAGINATION = {
   defaultPageSize: 12,
