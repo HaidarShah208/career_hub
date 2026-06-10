@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { Check, MapPin, Search, Star, X } from 'lucide-react'
 
@@ -9,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { PageHeader } from '@/shared/components/common/PageHeader'
 import { useToast } from '@/shared/components/ui/toast'
 import { useApplicants, type ApplicantStatus } from '../hooks/useApplicants'
+import { ROUTES } from '@/shared/constants'
 import { timeAgo } from '@/shared/lib/utils'
 
 const STATUS_VARIANT: Record<ApplicantStatus, BadgeProps['variant']> = {
@@ -95,7 +97,12 @@ export default function ApplicantsPage() {
               <img src={applicant.avatarUrl} alt="" className="h-12 w-12 shrink-0 rounded-full border border-border" />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-semibold">{applicant.name}</p>
+                  <Link
+                    to={ROUTES.employerApplicantDetail(applicant.id)}
+                    className="font-semibold hover:text-primary hover:underline"
+                  >
+                    {applicant.name}
+                  </Link>
                   <Badge variant={STATUS_VARIANT[applicant.status]} className="capitalize">
                     {applicant.status}
                   </Badge>
@@ -125,6 +132,9 @@ export default function ApplicantsPage() {
                   <p className="text-[10px] text-muted-foreground">match</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  <Button asChild variant="default" size="sm">
+                    <Link to={ROUTES.employerApplicantDetail(applicant.id)}>View profile</Link>
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"

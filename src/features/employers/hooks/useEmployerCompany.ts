@@ -67,6 +67,8 @@ export function useEmployerAnalytics() {
     queryKey: employerCompanyKeys.analytics,
     queryFn: getEmployerAnalytics,
     retry: false,
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
   })
   return {
     analytics: query.data ?? null,

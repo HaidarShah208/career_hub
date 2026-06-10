@@ -63,7 +63,14 @@ export default function InterviewsPage() {
                     alt=""
                     className="h-10 w-10 shrink-0 rounded-full border border-border"
                   />
-                  <CardTitle className="text-base">{interview.name}</CardTitle>
+                  <CardTitle className="text-base">
+                    <Link
+                      to={ROUTES.employerApplicantDetail(interview.id)}
+                      className="hover:text-primary hover:underline"
+                    >
+                      {interview.name}
+                    </Link>
+                  </CardTitle>
                 </div>
                 <Badge variant="soft-info">Interview</Badge>
               </CardHeader>
@@ -74,7 +81,7 @@ export default function InterviewsPage() {
                   <CalendarClock className="h-4 w-4 text-primary" /> Applied {formatDate(interview.appliedAt, 'long')}
                 </div>
                 <Button asChild variant="outline" size="sm" className="w-full">
-                  <Link to={ROUTES.employerApplicants}>View applicant</Link>
+                  <Link to={ROUTES.employerApplicantDetail(interview.id)}>View profile</Link>
                 </Button>
               </CardContent>
             </Card>

@@ -10,6 +10,7 @@ const EmployerJobs = lazy(() => import('@/features/employers/pages/MyJobsPage'))
 const EmployerPostJob = lazy(() => import('@/features/employers/pages/PostJobPage'))
 const EmployerEditJob = lazy(() => import('@/features/employers/pages/EditJobPage'))
 const EmployerApplicants = lazy(() => import('@/features/employers/pages/ApplicantsPage'))
+const EmployerApplicantDetail = lazy(() => import('@/features/employers/pages/ApplicantDetailPage'))
 const EmployerInterviews = lazy(() => import('@/features/employers/pages/InterviewsPage'))
 const EmployerAnalytics = lazy(() => import('@/features/employers/pages/AnalyticsPage'))
 const EmployerSettings = lazy(() => import('@/features/employers/pages/SettingsPage'))
@@ -29,6 +30,7 @@ export const employerRoutes = (
     <Route path="jobs/new" element={<EmployerPostJob />} />
     <Route path="jobs/:id/edit" element={<EmployerEditJob />} />
     <Route path="applicants" element={<EmployerApplicants />} />
+    <Route path="applicants/:id" element={<EmployerApplicantDetail />} />
     <Route path="interviews" element={<EmployerInterviews />} />
     <Route path="analytics" element={<EmployerAnalytics />} />
     <Route path="settings" element={<EmployerSettings />} />

@@ -75,6 +75,16 @@ export interface ApplicationTimelineEntry {
   date: string
 }
 
+export interface CandidateProfileSummary {
+  headline?: string
+  bio?: string
+  skills: string[]
+  experienceYears: number
+  city?: string
+  avatarUrl?: string
+  resumeUrl?: string
+}
+
 export interface Application {
   id: string
   jobId: string
@@ -82,6 +92,7 @@ export interface Application {
   candidateId: string
   candidateName?: string
   candidateEmail?: string
+  candidateProfile?: CandidateProfileSummary
   status: DomainApplicationStatus
   appliedAt: string
   coverLetter?: string
@@ -163,6 +174,16 @@ export interface BackendCandidate {
   email: string
 }
 
+export interface BackendCandidateProfile {
+  headline?: string | null
+  bio?: string | null
+  skills?: string[] | null
+  experienceYears?: number
+  city?: string | null
+  avatarUrl?: string | null
+  resumeUrl?: string | null
+}
+
 export interface BackendApplication {
   id: string
   candidateId: string
@@ -170,6 +191,7 @@ export interface BackendApplication {
   status: BackendApplicationStatus
   job?: BackendJob
   candidate?: BackendCandidate
+  candidateProfile?: BackendCandidateProfile
   history?: BackendStatusHistory[]
   createdAt: string
   updatedAt: string

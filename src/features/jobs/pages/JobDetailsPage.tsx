@@ -63,12 +63,12 @@ export default function JobDetailsPage() {
   const [coverLetter, setCoverLetter] = useState('')
 
   useEffect(() => {
-    if (!job?.id || job.backendStatus !== 'PUBLISHED') return
+    if (!job?.id) return
     const key = `pch.viewed.${job.id}`
     if (sessionStorage.getItem(key)) return
     sessionStorage.setItem(key, '1')
     recordJobView(job.id).catch(() => {})
-  }, [job?.id, job?.backendStatus])
+  }, [job?.id])
 
   if (isLoading) return <PageLoader />
   if (error || !job) {

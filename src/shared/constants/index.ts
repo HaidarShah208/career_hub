@@ -140,6 +140,7 @@ export const ROUTES = {
   employerPostJob: '/employer/jobs/new',
   employerEditJob: (id: string | number) => `/employer/jobs/${id}/edit`,
   employerApplicants: '/employer/applicants',
+  employerApplicantDetail: (id: string) => `/employer/applicants/${id}`,
   employerInterviews: '/employer/interviews',
   employerAnalytics: '/employer/analytics',
   // Admin

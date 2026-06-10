@@ -143,7 +143,12 @@ export default function EmployerOverviewPage() {
                       className="h-9 w-9 rounded-full border border-border"
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{applicant.name}</p>
+                      <Link
+                        to={ROUTES.employerApplicantDetail(applicant.id)}
+                        className="truncate text-sm font-medium hover:text-primary hover:underline"
+                      >
+                        {applicant.name}
+                      </Link>
                       <p className="truncate text-xs text-muted-foreground">
                         {applicant.jobTitle} · {timeAgo(applicant.appliedAt)}
                       </p>

@@ -191,6 +191,19 @@ export function mapApplication(a: BackendApplication): Application {
     ? `${a.candidate.firstName} ${a.candidate.lastName}`.trim()
     : undefined
 
+  const profile = a.candidateProfile
+  const candidateProfile = profile
+    ? {
+        headline: profile.headline ?? undefined,
+        bio: profile.bio ?? undefined,
+        skills: profile.skills ?? [],
+        experienceYears: profile.experienceYears ?? 0,
+        city: profile.city ?? undefined,
+        avatarUrl: profile.avatarUrl ?? undefined,
+        resumeUrl: profile.resumeUrl ?? undefined,
+      }
+    : undefined
+
   return {
     id: a.id,
     jobId: a.jobId,
@@ -198,9 +211,11 @@ export function mapApplication(a: BackendApplication): Application {
     candidateId: a.candidateId,
     candidateName,
     candidateEmail: a.candidate?.email,
+    candidateProfile,
     status: mapApplicationStatus(a.status),
     appliedAt: a.createdAt,
     matchScore: 0,
+    resumeUrl: candidateProfile?.resumeUrl,
     timeline: mapTimeline(a.history),
   }
 }

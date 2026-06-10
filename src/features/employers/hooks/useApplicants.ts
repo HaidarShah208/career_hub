@@ -1,7 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { listApplicants, updateApplicantStatus } from '../api/employer.api'
-import type { BackendApplicationStatus, DomainApplicationStatus } from '@/shared/types/domain'
+import {
+  getApplicant,
+  listApplicants,
+  updateApplicantStatus,
+} from '../api/employer.api'
+import type {
+  Application,
+  BackendApplicationStatus,
+  DomainApplicationStatus,
+} from '@/shared/types/domain'
+import { employerCompanyKeys } from './useEmployerCompany'
 
 export type ApplicantStatus = 'new' | 'shortlisted' | 'interview' | 'rejected' | 'hired'
 
@@ -22,6 +31,7 @@ export interface Applicant {
 
 export const applicantKeys = {
   all: ['employer', 'applicants'] as const,
+  detail: (id: string) => ['employer', 'applicants', id] as const,
 }
 
 function dicebear(seed: string): string {
@@ -54,28 +64,36 @@ export function useApplicants() {
     queryFn: () => listApplicants(1, 100),
   })
 
-  const applicants: Applicant[] = (query.data?.applicants ?? []).map((a) => {
+  function toApplicant(a: Application): Applicant {
     const name = a.candidateName || 'Candidate'
+    const profile = a.candidateProfile
     return {
       id: a.id,
       name,
-      avatarUrl: dicebear(name),
-      headline: a.job.title,
-      city: a.job.city || '',
+      avatarUrl: profile?.avatarUrl || dicebear(name),
+      headline: profile?.headline || 'Candidate',
+      city: profile?.city || a.job.city || '',
       jobId: a.jobId,
       jobTitle: a.job.title,
       appliedAt: a.appliedAt,
       matchScore: a.matchScore,
-      experienceYears: 0,
+      experienceYears: profile?.experienceYears ?? 0,
       status: DOMAIN_TO_APPLICANT[a.status] ?? 'new',
-      skills: [],
+      skills: profile?.skills ?? [],
     }
-  })
+  }
+
+  const applicants: Applicant[] = (query.data?.applicants ?? []).map(toApplicant)
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: ApplicantStatus }) =>
       updateApplicantStatus(id, APPLICANT_TO_BACKEND[status]),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: applicantKeys.all }),
+    onSuccess: (_data, { id }) => {
+      queryClient.invalidateQueries({ queryKey: applicantKeys.all })
+      queryClient.invalidateQueries({ queryKey: applicantKeys.detail(id) })
+      queryClient.invalidateQueries({ queryKey: employerCompanyKeys.analytics })
+      queryClient.invalidateQueries({ queryKey: employerCompanyKeys.dashboard })
+    },
   })
 
   return {
@@ -84,5 +102,32 @@ export function useApplicants() {
     isError: query.isError,
     setStatus: (id: string, status: ApplicantStatus) =>
       statusMutation.mutateAsync({ id, status }),
+  }
+}
+
+/** Single applicant with full profile + application timeline. */
+export function useApplicant(id: string | undefined) {
+  const query = useQuery({
+    queryKey: applicantKeys.detail(id ?? ''),
+    queryFn: () => getApplicant(id!),
+    enabled: Boolean(id),
+  })
+
+  const application = query.data
+  const name = application?.candidateName || 'Candidate'
+  const profile = application?.candidateProfile
+
+  return {
+    application,
+    name,
+    avatarUrl: profile?.avatarUrl || dicebear(name),
+    headline: profile?.headline,
+    bio: profile?.bio,
+    city: profile?.city,
+    skills: profile?.skills ?? [],
+    experienceYears: profile?.experienceYears ?? 0,
+    resumeUrl: profile?.resumeUrl || application?.resumeUrl,
+    isLoading: query.isLoading,
+    isError: query.isError,
   }
 }
