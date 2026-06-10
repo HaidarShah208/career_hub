@@ -8,6 +8,7 @@ import {
   BarChart3,
   Settings,
   Plus,
+  CreditCard,
 } from 'lucide-react'
 
 import { DashboardLayout } from './DashboardLayout'
@@ -43,7 +44,10 @@ export function EmployerLayout() {
       },
       {
         title: 'Account',
-        items: [{ label: 'Settings', to: `${ROUTES.employerDashboard}/settings`, icon: Settings }],
+        items: [
+          { label: 'Billing', to: ROUTES.employerBilling, icon: CreditCard },
+          { label: 'Settings', to: `${ROUTES.employerDashboard}/settings`, icon: Settings },
+        ],
       },
     ]
   }, [applicants])

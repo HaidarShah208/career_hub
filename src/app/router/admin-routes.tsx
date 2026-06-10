@@ -12,6 +12,8 @@ const AdminCategories = lazy(() => import('@/features/admin/pages/CategoriesPage
 const AdminRevenue = lazy(() => import('@/features/admin/pages/RevenuePage'))
 const AdminAnalytics = lazy(() => import('@/features/admin/pages/AnalyticsPage'))
 const AdminSettings = lazy(() => import('@/features/admin/pages/SettingsPage'))
+const AdminPlans = lazy(() => import('@/features/admin/pages/PlansPage'))
+const AdminPayments = lazy(() => import('@/features/admin/pages/PaymentsPage'))
 
 export const adminRoutes = (
   <Route
@@ -28,6 +30,8 @@ export const adminRoutes = (
     <Route path="jobs" element={<AdminJobs />} />
     <Route path="categories" element={<AdminCategories />} />
     <Route path="revenue" element={<AdminRevenue />} />
+    <Route path="plans" element={<AdminPlans />} />
+    <Route path="payments" element={<AdminPayments />} />
     <Route path="analytics" element={<AdminAnalytics />} />
     <Route path="settings" element={<AdminSettings />} />
   </Route>

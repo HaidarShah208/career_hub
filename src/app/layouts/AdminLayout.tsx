@@ -8,16 +8,20 @@ import {
   DollarSign,
   BarChart3,
   Settings,
+  CreditCard,
+  Layers,
 } from 'lucide-react'
 
 import { DashboardLayout } from './DashboardLayout'
 import { ROUTES } from '@/shared/constants'
 import type { SidebarSection } from '@/shared/components/common/DashboardSidebar'
 import { usePendingEmployers, useAdminModerationJobs } from '@/features/admin/hooks/useAdminData'
+import { useAdminPayments } from '@/features/admin/hooks/useAdminBilling'
 
 export function AdminLayout() {
   const { pending } = usePendingEmployers()
   const { jobs: draftJobs } = useAdminModerationJobs()
+  const { payments: pendingPayments } = useAdminPayments('PENDING')
 
   const sections = useMemo<SidebarSection[]>(() => {
     const pendingEmployers = pending.length
@@ -47,18 +51,28 @@ export function AdminLayout() {
         ],
       },
       {
-        title: 'Insights',
+        title: 'Billing',
         items: [
+          { label: 'Plans', to: ROUTES.adminPlans, icon: Layers },
+          {
+            label: 'Payments',
+            to: ROUTES.adminPayments,
+            icon: CreditCard,
+            badge: pendingPayments.length > 0 ? pendingPayments.length : undefined,
+          },
           { label: 'Revenue', to: ROUTES.adminRevenue, icon: DollarSign },
-          { label: 'Site Analytics', to: ROUTES.adminAnalytics, icon: BarChart3 },
         ],
+      },
+      {
+        title: 'Insights',
+        items: [{ label: 'Site Analytics', to: ROUTES.adminAnalytics, icon: BarChart3 }],
       },
       {
         title: 'System',
         items: [{ label: 'Settings', to: `${ROUTES.adminDashboard}/settings`, icon: Settings }],
       },
     ]
-  }, [pending.length, draftJobs.length])
+  }, [pending.length, draftJobs.length, pendingPayments.length])
 
   return <DashboardLayout sections={sections} />
 }

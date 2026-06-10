@@ -143,6 +143,7 @@ export const ROUTES = {
   employerApplicantDetail: (id: string) => `/employer/applicants/${id}`,
   employerInterviews: '/employer/interviews',
   employerAnalytics: '/employer/analytics',
+  employerBilling: '/employer/billing',
   // Admin
   adminDashboard: '/admin',
   adminUsers: '/admin/users',
@@ -151,6 +152,8 @@ export const ROUTES = {
   adminCategories: '/admin/categories',
   adminRevenue: '/admin/revenue',
   adminAnalytics: '/admin/analytics',
+  adminPlans: '/admin/plans',
+  adminPayments: '/admin/payments',
 } as const
 
 export const MAX_PROFILE_SKILLS = 6

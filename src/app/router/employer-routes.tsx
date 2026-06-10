@@ -14,6 +14,7 @@ const EmployerApplicantDetail = lazy(() => import('@/features/employers/pages/Ap
 const EmployerInterviews = lazy(() => import('@/features/employers/pages/InterviewsPage'))
 const EmployerAnalytics = lazy(() => import('@/features/employers/pages/AnalyticsPage'))
 const EmployerSettings = lazy(() => import('@/features/employers/pages/SettingsPage'))
+const EmployerBilling = lazy(() => import('@/features/employers/pages/BillingPage'))
 
 export const employerRoutes = (
   <Route
@@ -33,6 +34,7 @@ export const employerRoutes = (
     <Route path="applicants/:id" element={<EmployerApplicantDetail />} />
     <Route path="interviews" element={<EmployerInterviews />} />
     <Route path="analytics" element={<EmployerAnalytics />} />
+    <Route path="billing" element={<EmployerBilling />} />
     <Route path="settings" element={<EmployerSettings />} />
   </Route>
 )

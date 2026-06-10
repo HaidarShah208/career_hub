@@ -43,7 +43,7 @@ export default function RevenuePage() {
     <div>
       <PageHeader
         title="Revenue"
-        description="Premium job listing revenue (featured & urgent postings)."
+        description="Subscription and payment revenue from employer billing."
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -60,7 +60,7 @@ export default function RevenuePage() {
           accent="success"
         />
         <StatCard
-          label="Active Premium Listings"
+          label="Active Subscriptions"
           value={revenue?.activePremiumListings ?? 0}
           icon={CreditCard}
           accent="info"
@@ -70,7 +70,7 @@ export default function RevenuePage() {
           value={formatCompactRevenue(revenue?.pendingRevenue ?? 0)}
           icon={Receipt}
           accent="warning"
-          hint="Unpublished premium jobs"
+          hint="Awaiting admin verification"
         />
       </div>
 
