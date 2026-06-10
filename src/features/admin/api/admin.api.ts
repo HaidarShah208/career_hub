@@ -147,8 +147,14 @@ export async function fetchAdminRevenue(): Promise<AdminRevenue> {
   return unwrap<AdminRevenue>(res)
 }
 
-export async function fetchAdminJobs(page = 1, limit = 20): Promise<ListResult<Job>> {
-  const res = await http.get('/admin/jobs', { params: { page, limit, sortOrder: 'DESC' } })
+export async function fetchAdminJobs(
+  page = 1,
+  limit = 50,
+  status?: string,
+): Promise<ListResult<Job>> {
+  const res = await http.get('/admin/jobs', {
+    params: { page, limit, sortOrder: 'DESC', ...(status ? { status } : {}) },
+  })
   const items = unwrap<BackendJob[]>(res).map(mapJob)
   const meta = unwrapMeta(res)
   return { items, total: meta?.total ?? items.length, totalPages: meta?.totalPages ?? 1, page: meta?.page ?? page }
@@ -159,6 +165,15 @@ export async function fetchAdminApplications(page = 1, limit = 20): Promise<List
   const items = unwrap<BackendApplication[]>(res).map(mapApplication)
   const meta = unwrapMeta(res)
   return { items, total: meta?.total ?? items.length, totalPages: meta?.totalPages ?? 1, page: meta?.page ?? page }
+}
+
+export async function publishAdminJob(id: string): Promise<Job> {
+  const res = await http.put(`/jobs/${id}`, { status: 'PUBLISHED' })
+  return mapJob(unwrap<BackendJob>(res))
+}
+
+export async function deleteAdminJob(id: string): Promise<void> {
+  await http.delete(`/jobs/${id}`)
 }
 
 export async function fetchAdminCompanies(page = 1, limit = 20): Promise<ListResult<Company>> {

@@ -21,6 +21,7 @@ import {
 import { PageHeader } from '@/shared/components/common/PageHeader'
 import { PageLoader } from '@/shared/components/common/PageLoader'
 import { useToast } from '@/shared/components/ui/toast'
+import { useAuthStore } from '@/app/store/auth.store'
 import type { AdminUser } from '../api/admin.api'
 import { useAdminUsers } from '../hooks/useAdminData'
 import { formatDate } from '@/shared/lib/utils'
@@ -33,11 +34,15 @@ const ROLE_VARIANT: Record<AdminUser['role'], BadgeProps['variant']> = {
 
 export default function AdminUsersPage() {
   const { toast } = useToast()
+  const currentUserId = useAuthStore((s) => s.user?.id)
   const [query, setQuery] = useState('')
   const [role, setRole] = useState('all')
   const { users, total, isLoading, toggleStatus } = useAdminUsers(query, role)
 
-  const filtered = useMemo(() => users, [users])
+  const filtered = useMemo(
+    () => users.filter((u) => u.id !== currentUserId),
+    [users, currentUserId],
+  )
 
   async function handleToggleStatus(user: AdminUser) {
     try {
@@ -60,7 +65,10 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <PageHeader title="User Management" description={`${total} registered users.`} />
+      <PageHeader
+        title="User Management"
+        description={`${filtered.length} users (your admin account is hidden).`}
+      />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row">
         <Input
@@ -124,7 +132,8 @@ export default function AdminUsersPage() {
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{formatDate(user.joinedAt)}</td>
-                    <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right">
+                    {user.role !== 'admin' ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" aria-label="Actions">
@@ -137,7 +146,10 @@ export default function AdminUsersPage() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </td>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </td>
                   </tr>
                 ))}
               </tbody>
