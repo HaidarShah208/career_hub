@@ -80,19 +80,12 @@ export function AccountSettings({ extraNotifications = [] }: AccountSettingsProp
           <CardContent className="space-y-4">
             <div>
               <Label className="mb-1.5 block">Email</Label>
-              <Input defaultValue={user?.email} readOnly />
+              <Input value={user?.email ?? ''} disabled className='text-primary-900'/>
             </div>
             <div>
               <Label className="mb-1.5 block">Account type</Label>
-              <Input defaultValue={user?.role} readOnly className="capitalize" />
+              <Input value={user?.role ?? ''} disabled className="capitalized text-primary-900" />
             </div>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => toast({ title: 'Verification email sent', variant: 'success' })}
-            >
-              Resend verification email
-            </Button>
           </CardContent>
         </Card>
 
@@ -118,14 +111,7 @@ export function AccountSettings({ extraNotifications = [] }: AccountSettingsProp
             >
               Update password
             </Button>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">Two-factor authentication</p>
-                <p className="text-xs text-muted-foreground">Add an extra layer of security.</p>
-              </div>
-              <Switch />
-            </div>
+            
           </CardContent>
         </Card>
 

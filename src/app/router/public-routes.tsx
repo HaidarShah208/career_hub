@@ -2,6 +2,7 @@ import { lazy } from 'react'
 import { Route } from 'react-router-dom'
 
 import { PublicLayout } from '@/app/layouts/PublicLayout'
+import { AuthLayout } from '@/app/layouts/AuthLayout'
 
 const HomePage = lazy(() => import('@/features/jobs/pages/HomePage'))
 const JobsListPage = lazy(() => import('@/features/jobs/pages/JobsListPage'))
@@ -35,13 +36,16 @@ export const publicRoutes = (
     <Route path="contact" element={<ContactPage />} />
     <Route path="privacy" element={<PrivacyPage />} />
     <Route path="terms" element={<TermsPage />} />
+    <Route path="*" element={<NotFoundPage />} />
+  </Route>
+)
 
+export const authRoutes = (
+  <Route element={<AuthLayout />}>
     <Route path="auth/login" element={<LoginPage />} />
     <Route path="auth/register" element={<RegisterPage />} />
     <Route path="auth/forgot-password" element={<ForgotPasswordPage />} />
     <Route path="auth/reset-password" element={<ResetPasswordPage />} />
     <Route path="auth/verify-email" element={<VerifyEmailPage />} />
-
-    <Route path="*" element={<NotFoundPage />} />
   </Route>
 )
