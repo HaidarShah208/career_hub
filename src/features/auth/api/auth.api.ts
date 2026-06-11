@@ -16,6 +16,7 @@ interface BackendUser {
   email: string
   role: 'ADMIN' | 'EMPLOYER' | 'CANDIDATE'
   isActive: boolean
+  emailVerified: boolean
   createdAt: string
   updatedAt: string
 }
@@ -35,7 +36,7 @@ export function mapUser(backend: BackendUser): User {
     email: backend.email,
     fullName: `${backend.firstName} ${backend.lastName}`.trim(),
     role: backend.role.toLowerCase() as UserRole,
-    isVerified: backend.isActive,
+    isVerified: backend.emailVerified,
     createdAt: backend.createdAt,
     updatedAt: backend.updatedAt,
   }
@@ -98,21 +99,32 @@ export async function refresh(): Promise<string | null> {
  * Self-registration. Candidates register via `/auth/signup`; employers via
  * `/employers/signup`. Both return the same auth payload (user + tokens).
  */
-export async function register(values: RegisterFormValues): Promise<AuthResult> {
+export interface RegisterResult {
+  message: string
+  email: string
+}
+
+export async function register(values: RegisterFormValues): Promise<RegisterResult> {
   const parts = values.fullName.trim().split(/\s+/)
   const firstName = parts[0] ?? values.fullName.trim()
   const lastName = parts.slice(1).join(' ') || firstName
   const body = { firstName, lastName, email: values.email, password: values.password }
   const endpoint = values.role === 'employer' ? '/employers/signup' : '/auth/signup'
   const res = await http.post(endpoint, body)
-  const payload = unwrap<AuthPayload>(res)
-  storeRefreshToken(payload.refreshToken)
-  return { user: mapUser(payload.user), token: payload.accessToken }
+  const payload = unwrap<{ message: string; email: string }>(res)
+  return { message: payload.message, email: payload.email }
 }
 
-/**
- * Password reset / email verification flows have no backend endpoints yet.
- */
+export async function verifyEmailByToken(token: string): Promise<{ message: string }> {
+  const res = await http.post('/auth/verify-email', { token })
+  return unwrap(res)
+}
+
+export async function resendVerification(email: string): Promise<{ message: string }> {
+  const res = await http.post('/auth/resend-verification', { email })
+  return unwrap(res)
+}
+
 const NOT_IMPLEMENTED =
   'This feature is not available yet. Please contact support if you need help accessing your account.'
 
@@ -121,9 +133,5 @@ export async function requestPasswordReset(_email: string): Promise<void> {
 }
 
 export async function resetPassword(_password: string): Promise<void> {
-  throw new Error(NOT_IMPLEMENTED)
-}
-
-export async function verifyEmail(_code: string): Promise<void> {
   throw new Error(NOT_IMPLEMENTED)
 }

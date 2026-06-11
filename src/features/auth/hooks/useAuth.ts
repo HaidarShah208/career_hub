@@ -58,10 +58,13 @@ export function useAuth() {
   async function signUp(values: RegisterFormValues) {
     setIsLoading(true)
     try {
-      const { user, token } = await authApi.register(values)
-      setAuth(user, token)
-      toast({ title: 'Account created!', description: 'Welcome to Pakistan Career Hub.', variant: 'success' })
-      navigate(dashboardForRole(user.role), { replace: true })
+      const result = await authApi.register(values)
+      toast({
+        title: 'Account created',
+        description: result.message,
+        variant: 'success',
+      })
+      navigate(ROUTES.verifyEmail, { replace: true, state: { email: result.email } })
     } catch (err) {
       toast({
         title: 'Registration failed',
