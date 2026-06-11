@@ -1,5 +1,20 @@
 import { useState } from 'react'
-import { AlertTriangle, Bell, Globe, Loader2, Lock, LogOut, Moon, Shield, Trash2 } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import {
+  AlertTriangle,
+  Bell,
+  Eye,
+  EyeOff,
+  Globe,
+  Loader2,
+  Lock,
+  LogOut,
+  Moon,
+  Shield,
+  Trash2,
+} from 'lucide-react'
 
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
@@ -7,6 +22,7 @@ import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Switch } from '@/shared/components/ui/switch'
 import { Separator } from '@/shared/components/ui/separator'
+import { changePassword } from '@/shared/api/users.api'
 import {
   Dialog,
   DialogContent,
@@ -26,6 +42,22 @@ interface AccountSettingsProps {
   extraNotifications?: { id: string; label: string; description: string; default?: boolean }[]
 }
 
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: z.string().min(8, 'Password must be at least 8 characters'),
+    confirmPassword: z.string().min(1, 'Please confirm your new password'),
+  })
+  .refine(d => d.newPassword === d.confirmPassword, {
+    path: ['confirmPassword'],
+    message: 'Passwords do not match',
+  })
+
+type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>
+
+const readOnlyFieldClass =
+  'disabled:cursor-disabled disabled:opacity-80 bg-muted/50 text-foreground'
+
 const BASE_NOTIFICATIONS = [
   { id: 'jobs', label: 'New job matches', description: 'Get notified when jobs match your profile.', default: true },
   { id: 'applications', label: 'Application updates', description: 'Status changes on your applications.', default: true },
@@ -40,6 +72,15 @@ export function AccountSettings({ extraNotifications = [] }: AccountSettingsProp
   const { theme, setTheme } = useThemeStore()
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    reset: resetPasswordForm,
+    formState: { errors: passwordErrors, isSubmitting: isPasswordSubmitting },
+  } = useForm<ChangePasswordFormValues>({ resolver: zodResolver(changePasswordSchema) })
   const [notifications, setNotifications] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(
       [...BASE_NOTIFICATIONS, ...extraNotifications].map(n => [n.id, n.default ?? false]),
@@ -47,6 +88,24 @@ export function AccountSettings({ extraNotifications = [] }: AccountSettingsProp
   )
 
   const allNotifications = [...BASE_NOTIFICATIONS, ...extraNotifications]
+
+  async function onChangePassword(values: ChangePasswordFormValues) {
+    try {
+      const result = await changePassword(values.currentPassword, values.newPassword)
+      resetPasswordForm()
+      toast({
+        title: 'Password updated',
+        description: result.message,
+        variant: 'success',
+      })
+    } catch (err) {
+      toast({
+        title: 'Could not update password',
+        description: (err as { message?: string })?.message ?? 'Please try again.',
+        variant: 'error',
+      })
+    }
+  }
 
   async function handleDeleteAccount() {
     setIsDeleting(true)
@@ -80,11 +139,20 @@ export function AccountSettings({ extraNotifications = [] }: AccountSettingsProp
           <CardContent className="space-y-4">
             <div>
               <Label className="mb-1.5 block">Email</Label>
-              <Input value={user?.email ?? ''} disabled className='text-primary-900'/>
+              <Input value={user?.email ?? ''} disabled readOnly className={readOnlyFieldClass} />
+            </div>
+            <div>
+              <Label className="mb-1.5 block">Full name</Label>
+              <Input value={user?.fullName ?? ''} disabled readOnly className={readOnlyFieldClass} />
             </div>
             <div>
               <Label className="mb-1.5 block">Account type</Label>
-              <Input value={user?.role ?? ''} disabled className="capitalized text-primary-900" />
+              <Input
+                value={user?.role ?? ''}
+                disabled
+                readOnly
+                className={cn(readOnlyFieldClass, 'capitalize')}
+              />
             </div>
           </CardContent>
         </Card>
@@ -96,22 +164,87 @@ export function AccountSettings({ extraNotifications = [] }: AccountSettingsProp
               <Lock className="h-4 w-4" /> Password & security
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label className="mb-1.5 block">Current password</Label>
-              <Input type="password" placeholder="••••••••" />
-            </div>
-            <div>
-              <Label className="mb-1.5 block">New password</Label>
-              <Input type="password" placeholder="••••••••" />
-            </div>
-            <Button
-              className="w-full"
-              onClick={() => toast({ title: 'Password updated', variant: 'success' })}
-            >
-              Update password
-            </Button>
-            
+          <CardContent>
+            <form onSubmit={handlePasswordSubmit(onChangePassword)} className="space-y-4">
+              <div>
+                <Label className="mb-1.5 block" htmlFor="currentPassword">
+                  Current password
+                </Label>
+                <Input
+                  id="currentPassword"
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  leftIcon={<Lock />}
+                  rightIcon={
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(p => !p)}
+                      className="pointer-events-auto"
+                      aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'}
+                    >
+                      {showCurrentPassword ? <EyeOff /> : <Eye />}
+                    </button>
+                  }
+                  {...registerPassword('currentPassword')}
+                />
+                {passwordErrors.currentPassword && (
+                  <p className="mt-1 text-xs text-destructive">{passwordErrors.currentPassword.message}</p>
+                )}
+              </div>
+              <div>
+                <Label className="mb-1.5 block" htmlFor="newPassword">
+                  New password
+                </Label>
+                <Input
+                  id="newPassword"
+                  type={showNewPassword ? 'text' : 'password'}
+                  placeholder="At least 8 characters"
+                  leftIcon={<Lock />}
+                  rightIcon={
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(p => !p)}
+                      className="pointer-events-auto"
+                      aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
+                    >
+                      {showNewPassword ? <EyeOff /> : <Eye />}
+                    </button>
+                  }
+                  {...registerPassword('newPassword')}
+                />
+                {passwordErrors.newPassword && (
+                  <p className="mt-1 text-xs text-destructive">{passwordErrors.newPassword.message}</p>
+                )}
+              </div>
+              <div>
+                <Label className="mb-1.5 block" htmlFor="confirmPassword">
+                  Confirm new password
+                </Label>
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="Re-enter new password"
+                  leftIcon={<Lock />}
+                  rightIcon={
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(p => !p)}
+                      className="pointer-events-auto"
+                      aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                    >
+                      {showConfirmPassword ? <EyeOff /> : <Eye />}
+                    </button>
+                  }
+                  {...registerPassword('confirmPassword')}
+                />
+                {passwordErrors.confirmPassword && (
+                  <p className="mt-1 text-xs text-destructive">{passwordErrors.confirmPassword.message}</p>
+                )}
+              </div>
+              <Button type="submit" className="w-full" loading={isPasswordSubmitting}>
+                Update password
+              </Button>
+            </form>
           </CardContent>
         </Card>
 

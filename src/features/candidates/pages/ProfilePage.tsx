@@ -23,7 +23,8 @@ import { EXPERIENCE_LEVELS, JOB_CATEGORIES, MAX_PROFILE_SKILLS, PAKISTAN_CITIES 
 import { initials } from '@/shared/lib/utils'
 import { uploadAvatar, deleteAvatar } from '@/shared/services/uploads.api'
 import { useCandidateProfile } from '../hooks/useCandidateProfile'
-import { levelToYears, yearsToLevel } from '../lib/profile'
+import { ProfileStrengthPanel } from '../components/ProfileStrengthPanel'
+import { computeProfileSteps, levelToYears, profileScore as scoreFromSteps, yearsToLevel } from '../lib/profile'
 import { getCandidateExtras, saveCandidateExtras } from '../lib/extras'
 import { profileSchema, type ProfileFormValues } from '../schemas'
 
@@ -142,6 +143,8 @@ export default function CandidateProfilePage() {
   const city = watch('city')
   const experienceLevel = watch('experienceLevel')
   const category = watch('category')
+  const profileSteps = computeProfileSteps(profile, user ?? null)
+  const profileScore = scoreFromSteps(profileSteps)
 
   async function onSubmit(values: ProfileFormValues) {
     try {
@@ -182,6 +185,7 @@ export default function CandidateProfilePage() {
       />
 
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+        <div className="space-y-6">
         <Card className="h-fit">
           <CardContent className="flex flex-col items-center p-6 text-center">
             <div className="relative">
@@ -248,6 +252,9 @@ export default function CandidateProfilePage() {
             )}
           </CardContent>
         </Card>
+
+        <ProfileStrengthPanel profileScore={profileScore} profileSteps={profileSteps} />
+        </div>
 
         <div className="space-y-6">
           <Card>
