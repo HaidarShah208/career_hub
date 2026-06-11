@@ -11,8 +11,10 @@ import { AuthShell } from '../components/AuthShell'
 import { requestPasswordReset } from '../api/auth.api'
 import { forgotPasswordSchema, type ForgotPasswordFormValues } from '../schemas'
 import { ROUTES } from '@/shared/constants'
+import { useToast } from '@/shared/components/ui/toast'
 
 export default function ForgotPasswordPage() {
+  const { toast } = useToast()
   const [sent, setSent] = useState(false)
   const [email, setEmail] = useState('')
   const {
@@ -22,9 +24,17 @@ export default function ForgotPasswordPage() {
   } = useForm<ForgotPasswordFormValues>({ resolver: zodResolver(forgotPasswordSchema) })
 
   async function onSubmit(values: ForgotPasswordFormValues) {
-    await requestPasswordReset(values.email)
-    setEmail(values.email)
-    setSent(true)
+    try {
+      await requestPasswordReset(values.email)
+      setEmail(values.email)
+      setSent(true)
+    } catch (err) {
+      toast({
+        title: 'Could not send reset link',
+        description: (err as { message?: string })?.message ?? 'Please try again.',
+        variant: 'error',
+      })
+    }
   }
 
   return (
@@ -43,11 +53,17 @@ export default function ForgotPasswordPage() {
             <MailCheck className="h-6 w-6" />
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
-            We’ve sent a password reset link to <span className="font-medium text-foreground">{email}</span>. The link
-            expires in 30 minutes.
+            If an account exists for <span className="font-medium text-foreground">{email}</span>, we’ve sent a
+            password reset link. The link expires in 30 minutes.
           </p>
-          <Button asChild variant="outline" className="mt-5 w-full">
-            <Link to={ROUTES.resetPassword}>Open reset link (demo)</Link>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-5 w-full"
+            loading={isSubmitting}
+            onClick={() => void onSubmit({ email })}
+          >
+            Resend link
           </Button>
         </div>
       ) : (

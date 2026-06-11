@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, EyeOff, Lock } from 'lucide-react'
@@ -15,6 +15,8 @@ import { ROUTES } from '@/shared/constants'
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const token = searchParams.get('token')?.trim() ?? ''
   const { toast } = useToast()
   const [showPassword, setShowPassword] = useState(false)
   const {
@@ -24,9 +26,48 @@ export default function ResetPasswordPage() {
   } = useForm<ResetPasswordFormValues>({ resolver: zodResolver(resetPasswordSchema) })
 
   async function onSubmit(values: ResetPasswordFormValues) {
-    await resetPassword(values.password)
-    toast({ title: 'Password reset!', description: 'You can now sign in with your new password.', variant: 'success' })
-    navigate(ROUTES.login)
+    if (!token) {
+      toast({
+        title: 'Invalid reset link',
+        description: 'Request a new password reset link and try again.',
+        variant: 'error',
+      })
+      return
+    }
+
+    try {
+      const result = await resetPassword(token, values.password)
+      toast({
+        title: 'Password reset!',
+        description: result.message ?? 'You can now sign in with your new password.',
+        variant: 'success',
+      })
+      navigate(ROUTES.login)
+    } catch (err) {
+      toast({
+        title: 'Could not reset password',
+        description: (err as { message?: string })?.message ?? 'Please try again.',
+        variant: 'error',
+      })
+    }
+  }
+
+  if (!token) {
+    return (
+      <AuthShell
+        title="Invalid reset link"
+        subtitle="This link is missing or incomplete. Request a new one from the sign-in page."
+        footer={
+          <Link to={ROUTES.forgotPassword} className="font-medium text-primary hover:underline">
+            Request new link
+          </Link>
+        }
+      >
+        <Button asChild className="w-full">
+          <Link to={ROUTES.login}>Back to sign in</Link>
+        </Button>
+      </AuthShell>
+    )
   }
 
   return (

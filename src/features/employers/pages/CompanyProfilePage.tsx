@@ -27,7 +27,7 @@ import {
 import { PageHeader } from '@/shared/components/common/PageHeader'
 import { PageLoader } from '@/shared/components/common/PageLoader'
 import { useToast } from '@/shared/components/ui/toast'
-import { CompanyLogoUpload } from '../components/CompanyLogoUpload'
+import { CompanyLogoPicker } from '../components/CompanyLogoPicker'
 import { useEmployerCompany } from '../hooks/useEmployerCompany'
 import { PAKISTAN_CITIES } from '@/shared/constants'
 import { companyProfileSchema, type CompanyProfileFormValues } from '../schemas'
@@ -139,11 +139,7 @@ export default function CompanyProfilePage() {
         <Card className="overflow-hidden">
           <CardContent className="p-0">
             <div className="flex flex-col gap-6 p-6 sm:flex-row sm:items-start">
-              <img
-                src={company.logoUrl}
-                alt=""
-                className="h-24 w-24 shrink-0 rounded-xl border border-border object-cover shadow-sm"
-              />
+              <CompanyLogoPicker logoUrl={company.logoUrl} />
               <div className="min-w-0 flex-1 space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-bold tracking-tight">{company.name}</h2>
@@ -192,7 +188,7 @@ export default function CompanyProfilePage() {
         title={hasCompany ? 'Edit company profile' : 'Create company profile'}
         description={
           hasCompany
-            ? 'Update your company details and logo.'
+            ? 'Update your company details.'
             : 'Create your company profile to start posting jobs.'
         }
         actions={
@@ -210,20 +206,6 @@ export default function CompanyProfilePage() {
       />
 
       <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Company logo</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CompanyLogoUpload disabled={!hasCompany} />
-            {!hasCompany && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Save your company profile first, then upload a logo.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">

@@ -125,13 +125,12 @@ export async function resendVerification(email: string): Promise<{ message: stri
   return unwrap(res)
 }
 
-const NOT_IMPLEMENTED =
-  'This feature is not available yet. Please contact support if you need help accessing your account.'
-
-export async function requestPasswordReset(_email: string): Promise<void> {
-  throw new Error(NOT_IMPLEMENTED)
+export async function requestPasswordReset(email: string): Promise<{ message: string }> {
+  const res = await http.post('/auth/forgot-password', { email })
+  return unwrap(res)
 }
 
-export async function resetPassword(_password: string): Promise<void> {
-  throw new Error(NOT_IMPLEMENTED)
+export async function resetPassword(token: string, password: string): Promise<{ message: string }> {
+  const res = await http.post('/auth/reset-password', { token, password })
+  return unwrap(res)
 }
