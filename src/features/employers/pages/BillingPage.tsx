@@ -11,7 +11,7 @@ import { PageLoader } from '@/shared/components/common/PageLoader'
 import { FileUpload } from '@/shared/components/common/FileUpload'
 import { useToast } from '@/shared/components/ui/toast'
 import { formatPKR } from '@/shared/lib/utils'
-import { usePlans, useBillingOverview, planFeatures } from '@/features/billing/hooks/useBilling'
+import { usePlans, useBillingOverview, isFreePlan, planFeatures } from '@/features/billing/hooks/useBilling'
 import { uploadPaymentProof } from '@/features/billing/api/billing.api'
 
 type ManualMethod = 'EASYPAISA' | 'JAZZCASH' | 'BANK_TRANSFER'
@@ -37,7 +37,7 @@ function UsageBar({ label, used, remaining }: { label: string; used: number; rem
 export default function BillingPage() {
   const { toast } = useToast()
   const { plans, isLoading: plansLoading } = usePlans()
-  const { overview, isLoading, submitManualPayment, startStripeCheckout, isSubmitting } =
+  const { overview, isLoading, activateFreePlan, submitManualPayment, startStripeCheckout, isSubmitting } =
     useBillingOverview()
 
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
@@ -85,6 +85,20 @@ export default function BillingPage() {
     } catch (err) {
       toast({
         title: 'Submission failed',
+        description: (err as { message?: string })?.message ?? 'Try again.',
+        variant: 'error',
+      })
+    }
+  }
+
+  async function handleActivateFree() {
+    try {
+      await activateFreePlan()
+      toast({ title: 'Free plan activated', description: 'You can now post jobs on your free plan.', variant: 'success' })
+      setSelectedPlanId(null)
+    } catch (err) {
+      toast({
+        title: 'Could not activate free plan',
         description: (err as { message?: string })?.message ?? 'Try again.',
         variant: 'error',
       })
@@ -174,10 +188,11 @@ export default function BillingPage() {
 
       <div>
         <h2 className="mb-4 text-lg font-semibold">Available plans</h2>
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {plans.map((plan) => {
             const owned = isCurrentPlan(plan.id)
             const pending = isPendingPlan(plan.id)
+            const free = isFreePlan(plan)
             const highlighted = owned || pending || selectedPlanId === plan.id
 
             return (
@@ -191,7 +206,10 @@ export default function BillingPage() {
               )}
               <CardHeader>
                 <CardTitle>{plan.name}</CardTitle>
-                <p className="text-2xl font-bold">{formatPKR(plan.price)}<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
+                <p className="text-2xl font-bold">
+                  {formatPKR(plan.price)}
+                  <span className="text-sm font-normal text-muted-foreground">/mo</span>
+                </p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <ul className="space-y-2 text-sm">
@@ -202,26 +220,37 @@ export default function BillingPage() {
                   ))}
                 </ul>
                 <div className="flex flex-col gap-2">
-                  <Button
-                    disabled={!isApproved || isSubmitting || owned || pending}
-                    onClick={() => !owned && !pending && setSelectedPlanId(plan.id)}
-                    variant={owned || selectedPlanId === plan.id ? 'default' : 'outline'}
-                  >
-                    {owned
-                      ? 'Selected'
-                      : pending
-                        ? 'Payment pending'
-                        : selectedPlanId === plan.id
+                  {free ? (
+                    <Button
+                      disabled={!isApproved || isSubmitting || owned || pending}
+                      onClick={() => void handleActivateFree()}
+                    >
+                      {owned ? 'Current plan' : 'Activate free plan'}
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        disabled={!isApproved || isSubmitting || owned || pending}
+                        onClick={() => !owned && !pending && setSelectedPlanId(plan.id)}
+                        variant={owned || selectedPlanId === plan.id ? 'default' : 'outline'}
+                      >
+                        {owned
                           ? 'Selected'
-                          : 'Select plan'}
-                  </Button>
-                  <Button
-                    disabled={!isApproved || isSubmitting || owned || pending}
-                    variant="secondary"
-                    onClick={() => handleStripe(plan.id)}
-                  >
-                    <CreditCard className="mr-2 h-4 w-4" /> Pay with Stripe
-                  </Button>
+                          : pending
+                            ? 'Payment pending'
+                            : selectedPlanId === plan.id
+                              ? 'Selected'
+                              : 'Select plan'}
+                      </Button>
+                      <Button
+                        disabled={!isApproved || isSubmitting || owned || pending}
+                        variant="secondary"
+                        onClick={() => handleStripe(plan.id)}
+                      >
+                        <CreditCard className="mr-2 h-4 w-4" /> Pay with Stripe
+                      </Button>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -230,7 +259,10 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {selectedPlanId && isApproved && !isCurrentPlan(selectedPlanId) && (
+      {(() => {
+        const selectedPlan = plans.find(p => p.id === selectedPlanId)
+        return selectedPlanId && selectedPlan && isApproved && !isCurrentPlan(selectedPlanId) && !isFreePlan(selectedPlan)
+      })() && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Manual payment (Easypaisa / JazzCash / Bank)</CardTitle>

@@ -64,6 +64,10 @@ export async function fetchBillingOverview(): Promise<BillingOverview> {
   return unwrap<BillingOverview>(res)
 }
 
+export async function activateFreePlan(): Promise<void> {
+  await http.post('/employer/billing/activate-free')
+}
+
 export async function submitManualPayment(input: {
   planId: string
   paymentMethod: 'EASYPAISA' | 'JAZZCASH' | 'BANK_TRANSFER'
