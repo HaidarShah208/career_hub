@@ -144,6 +144,7 @@ export const ROUTES = {
   employerInterviews: '/employer/interviews',
   employerAnalytics: '/employer/analytics',
   employerBilling: '/employer/billing',
+  employerBillingUsage: '/employer/billing/usage',
   // Admin
   adminDashboard: '/admin',
   adminUsers: '/admin/users',

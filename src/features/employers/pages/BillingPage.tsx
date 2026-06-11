@@ -1,38 +1,23 @@
-import { useState } from 'react'
-import { Check, CreditCard, Loader2, ShieldAlert } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { BarChart3, CreditCard, Loader2, ShieldAlert } from 'lucide-react'
 
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
-import { PageHeader } from '@/shared/components/common/PageHeader'
 import { PageLoader } from '@/shared/components/common/PageLoader'
 import { FileUpload } from '@/shared/components/common/FileUpload'
 import { useToast } from '@/shared/components/ui/toast'
-import { formatPKR } from '@/shared/lib/utils'
-import { usePlans, useBillingOverview, isFreePlan, planFeatures } from '@/features/billing/hooks/useBilling'
+import { PlanPricingCard } from '@/features/billing/components/PlanPricingCard'
+import { usePlans, useBillingOverview, isFreePlan } from '@/features/billing/hooks/useBilling'
 import { uploadPaymentProof } from '@/features/billing/api/billing.api'
+import { ROUTES } from '@/shared/constants'
+import { cn } from '@/shared/lib/utils'
 
 type ManualMethod = 'EASYPAISA' | 'JAZZCASH' | 'BANK_TRANSFER'
-
-function UsageBar({ label, used, remaining }: { label: string; used: number; remaining: number | null }) {
-  const total = remaining === null ? used : used + remaining
-  const pct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0
-  return (
-    <div className="space-y-1.5">
-      <div className="flex justify-between text-sm">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="font-medium">
-          {used} / {remaining === null ? '∞' : total}
-        </span>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  )
-}
+type BillingPeriod = 'monthly' | 'yearly'
 
 export default function BillingPage() {
   const { toast } = useToast()
@@ -40,24 +25,26 @@ export default function BillingPage() {
   const { overview, isLoading, activateFreePlan, submitManualPayment, startStripeCheckout, isSubmitting } =
     useBillingOverview()
 
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly')
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<ManualMethod>('EASYPAISA')
   const [transactionRef, setTransactionRef] = useState('')
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const paymentSectionRef = useRef<HTMLDivElement>(null)
 
   if (isLoading || plansLoading) return <PageLoader />
 
   const company = overview?.company
   const subscription = overview?.subscription
-  const usage = overview?.usage
   const instructions = overview?.paymentInstructions
   const isApproved = company?.employerStatus === 'APPROVED'
-  const isActive = subscription?.status === 'ACTIVE'
   const currentPlanId =
     subscription?.status === 'ACTIVE' ? (subscription.plan?.id ?? null) : null
   const pendingPlanId =
     subscription?.status === 'PENDING_PAYMENT' ? (subscription.plan?.id ?? null) : null
+
+  const selectedPlan = plans.find((p) => p.id === selectedPlanId)
 
   function isCurrentPlan(planId: string) {
     return currentPlanId === planId
@@ -65,6 +52,17 @@ export default function BillingPage() {
 
   function isPendingPlan(planId: string) {
     return pendingPlanId === planId
+  }
+
+  function handlePlanSelect(planId: string) {
+    const plan = plans.find((p) => p.id === planId)
+    setSelectedPlanId(planId)
+
+    if (plan && isApproved && !isCurrentPlan(planId) && !isFreePlan(plan)) {
+      window.setTimeout(() => {
+        paymentSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 150)
+    }
   }
 
   async function handleManualSubmit() {
@@ -126,10 +124,19 @@ export default function BillingPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        title="Subscription & Billing"
-        description="Manage your plan, track usage, and renew your subscription."
-      />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Plans & pricing</h1>
+          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+            Choose the plan that fits your hiring needs. Upgrade anytime as your team grows.
+          </p>
+        </div>
+        <Button asChild variant="outline">
+          <Link to={ROUTES.employerBillingUsage}>
+            <BarChart3 className="h-4 w-4" /> View plan usage
+          </Link>
+        </Button>
+      </div>
 
       {!isApproved && (
         <Card className="border-warning/40 bg-warning/5">
@@ -146,133 +153,53 @@ export default function BillingPage() {
         </Card>
       )}
 
-      {subscription && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Current subscription</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <p className="text-xs text-muted-foreground">Plan</p>
-              <p className="font-semibold">{subscription.plan?.name ?? '—'}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Status</p>
-              <Badge variant={isActive ? 'default' : 'secondary'}>{subscription.status}</Badge>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Renewal date</p>
-              <p className="font-medium">
-                {subscription.endDate ? new Date(subscription.endDate).toLocaleDateString() : '—'}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Auto-renew</p>
-              <p className="font-medium">{subscription.autoRenew ? 'On' : 'Off'}</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <div className="pt-10">
+        
 
-      {usage && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Usage</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            <UsageBar label="Jobs" used={usage.jobsUsed} remaining={usage.jobsRemaining} />
-            <UsageBar label="Applications" used={usage.applicationsUsed} remaining={usage.applicationsRemaining} />
-          </CardContent>
-        </Card>
-      )}
-
-      <div>
-        <h2 className="mb-4 text-lg font-semibold">Available plans</h2>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 xl:items-end">
           {plans.map((plan) => {
             const owned = isCurrentPlan(plan.id)
             const pending = isPendingPlan(plan.id)
             const free = isFreePlan(plan)
-            const highlighted = owned || pending || selectedPlanId === plan.id
+            const showAsPopular = plan.isPopular && !owned
 
             return (
-            <Card
-              key={plan.id}
-              className={`relative ${plan.isPopular ? 'border-primary shadow-md' : ''} ${highlighted ? 'ring-2 ring-primary' : ''}`}
-            >
-              
-              {plan.isPopular && (
-                <Badge className="absolute -top-2 right-4">Popular</Badge>
-              )}
-              <CardHeader>
-                <CardTitle>{plan.name}</CardTitle>
-                <p className="text-2xl font-bold">
-                  {formatPKR(plan.price)}
-                  <span className="text-sm font-normal text-muted-foreground">/mo</span>
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ul className="space-y-2 text-sm">
-                  {planFeatures(plan).map((f) => (
-                    <li key={f} className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-primary" /> {f}
-                    </li>
-                  ))}
-                </ul>
-                <div className="flex flex-col gap-2">
-                  {free ? (
-                    <Button
-                      disabled={!isApproved || isSubmitting || owned || pending}
-                      onClick={() => void handleActivateFree()}
-                    >
-                      {owned ? 'Current plan' : 'Activate free plan'}
-                    </Button>
-                  ) : (
-                    <>
-                      <Button
-                        disabled={!isApproved || isSubmitting || owned || pending}
-                        onClick={() => !owned && !pending && setSelectedPlanId(plan.id)}
-                        variant={owned || selectedPlanId === plan.id ? 'default' : 'outline'}
-                      >
-                        {owned
-                          ? 'Selected'
-                          : pending
-                            ? 'Payment pending'
-                            : selectedPlanId === plan.id
-                              ? 'Selected'
-                              : 'Select plan'}
-                      </Button>
-                      <Button
-                        disabled={!isApproved || isSubmitting || owned || pending}
-                        variant="secondary"
-                        onClick={() => handleStripe(plan.id)}
-                      >
-                        <CreditCard className="mr-2 h-4 w-4" /> Pay with Stripe
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+              <PlanPricingCard
+                key={plan.id}
+                plan={plan}
+                isCurrent={owned}
+                isPending={pending}
+                isSelected={selectedPlanId === plan.id}
+                isPopular={showAsPopular}
+                isFree={free}
+                disabled={!isApproved}
+                loading={isSubmitting}
+                onSelect={() => !owned && !pending && handlePlanSelect(plan.id)}
+                onActivateFree={() => void handleActivateFree()}
+                onStripe={() => void handleStripe(plan.id)}
+              />
             )
           })}
         </div>
       </div>
 
-      {(() => {
-        const selectedPlan = plans.find(p => p.id === selectedPlanId)
-        return selectedPlanId && selectedPlan && isApproved && !isCurrentPlan(selectedPlanId) && !isFreePlan(selectedPlan)
-      })() && (
-        <Card>
+      {selectedPlan && isApproved && !isCurrentPlan(selectedPlan.id) && !isFreePlan(selectedPlan) && (
+        <Card ref={paymentSectionRef} id="manual-payment" className="scroll-mt-6">
           <CardHeader>
-            <CardTitle className="text-base">Manual payment (Easypaisa / JazzCash / Bank)</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CreditCard className="h-4 w-4" /> Manual payment — {selectedPlan.name}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {paymentMethod === 'EASYPAISA' && (
-              <p className="text-sm text-muted-foreground">Send payment to Easypaisa: <strong>{instructions?.easypaisa}</strong></p>
+              <p className="text-sm text-muted-foreground">
+                Send payment to Easypaisa: <strong>{instructions?.easypaisa}</strong>
+              </p>
             )}
             {paymentMethod === 'JAZZCASH' && (
-              <p className="text-sm text-muted-foreground">Send payment to JazzCash: <strong>{instructions?.jazzcash}</strong></p>
+              <p className="text-sm text-muted-foreground">
+                Send payment to JazzCash: <strong>{instructions?.jazzcash}</strong>
+              </p>
             )}
             {paymentMethod === 'BANK_TRANSFER' && instructions?.bank && (
               <div className="rounded-md border p-3 text-sm">
@@ -324,7 +251,10 @@ export default function BillingPage() {
               }}
             />
 
-            <Button onClick={handleManualSubmit} disabled={isSubmitting}>
+            <Button
+              onClick={handleManualSubmit}
+              disabled={isSubmitting || uploading || !screenshotUrl || !transactionRef.trim()}
+            >
               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Submit for verification
             </Button>

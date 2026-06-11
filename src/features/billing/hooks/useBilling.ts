@@ -71,6 +71,18 @@ function recruiterLabel(count: number | null | undefined): string {
   return n === '1' ? '1 Recruiter' : `${n} Recruiters`
 }
 
+function applicationsLabel(limit: number | null | undefined): string {
+  if (limit === null || limit === undefined) return 'Unlimited Applications'
+  return `${formatLimit(limit)} Applications`
+}
+
+function featuredJobsLabel(limit: number | null | undefined): string {
+  if (limit === null || limit === undefined) return 'Unlimited Featured Jobs'
+  if (limit === 0) return 'No Featured Jobs'
+  return `${formatLimit(limit)} Featured Jobs`
+}
+
+/** Always returns exactly 5 feature lines for consistent plan cards. */
 export function planFeatures(plan: Plan): string[] {
   if (plan.slug === 'free') {
     return [
@@ -82,20 +94,13 @@ export function planFeatures(plan: Plan): string[] {
     ]
   }
 
-  const features: string[] = []
-  features.push(`${formatLimit(plan.jobLimit)} Active Jobs`)
-  features.push(recruiterLabel(plan.recruiterSeats))
-  features.push(`${formatLimit(plan.resumeViews)} Resume Views`)
-  if (plan.applicationLimit) {
-    features.push(`${formatLimit(plan.applicationLimit)} Applications`)
-  }
-  if (plan.featuredJobsLimit) {
-    features.push(`${formatLimit(plan.featuredJobsLimit)} Featured Jobs`)
-  } else if (plan.featuredJobsLimit === 0) {
-    features.push('No Featured Jobs')
-  }
-  if (plan.prioritySupport) features.push('Priority Support')
-  return features
+  return [
+    `${formatLimit(plan.jobLimit)} Active Jobs`,
+    recruiterLabel(plan.recruiterSeats),
+    `${formatLimit(plan.resumeViews)} Resume Views`,
+    applicationsLabel(plan.applicationLimit),
+    plan.prioritySupport ? 'Priority Support' : featuredJobsLabel(plan.featuredJobsLimit),
+  ]
 }
 
 export function isFreePlan(plan: Plan): boolean {

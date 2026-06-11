@@ -45,7 +45,8 @@ export function EmployerLayout() {
       {
         title: 'Account',
         items: [
-          { label: 'Billing', to: ROUTES.employerBilling, icon: CreditCard },
+          { label: 'Billing', to: ROUTES.employerBilling, icon: CreditCard, end: true },
+          { label: 'Plan usage', to: ROUTES.employerBillingUsage, icon: BarChart3 },
           { label: 'Settings', to: `${ROUTES.employerDashboard}/settings`, icon: Settings },
         ],
       },

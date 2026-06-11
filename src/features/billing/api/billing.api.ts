@@ -44,7 +44,20 @@ export interface BillingOverview {
     endDate?: string | null
     autoRenew: boolean
     pendingPlanId?: string | null
-    plan: { id: string; name: string; slug: string; price: number; currency: string; billingCycle: string } | null
+    plan: {
+      id: string
+      name: string
+      slug: string
+      price: number
+      currency: string
+      billingCycle: string
+      jobLimit?: number | null
+      applicationLimit?: number | null
+      featuredJobsLimit?: number | null
+      recruiterSeats?: number | null
+      resumeViews?: number | null
+      prioritySupport?: boolean
+    } | null
   } | null
   usage: BillingUsage | null
   paymentInstructions: {

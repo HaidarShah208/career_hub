@@ -34,9 +34,7 @@ export function Logo({ className, iconClassName, showText = true, size = 'md' }:
           <span className={cn('font-bold tracking-tight text-foreground', s.text)}>
             Pakistan <span className="text-primary">Career</span> Hub
           </span>
-          <span className={cn('text-muted-foreground tracking-wide mt-0.5', s.sub)}>
-            Find your next opportunity
-          </span>
+          
         </div>
       )}
     </Link>

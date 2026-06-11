@@ -13,7 +13,8 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ sections }: DashboardLayoutProps) {
   const location = useLocation()
-  const { isSidebarOpen, setSidebarOpen, toggleSidebar } = useUIStore()
+  const { isSidebarOpen, isSidebarCollapsed, setSidebarOpen, toggleSidebar, toggleSidebarCollapsed } =
+    useUIStore()
 
   useEffect(() => {
     setSidebarOpen(false)
@@ -21,7 +22,12 @@ export function DashboardLayout({ sections }: DashboardLayoutProps) {
 
   return (
     <div className="flex min-h-screen bg-muted/20">
-      <DashboardSidebar sections={sections} open={isSidebarOpen} />
+      <DashboardSidebar
+        sections={sections}
+        open={isSidebarOpen}
+        collapsed={isSidebarCollapsed}
+        onToggleCollapse={toggleSidebarCollapsed}
+      />
       {isSidebarOpen && (
         <button
           aria-label="Close sidebar"
