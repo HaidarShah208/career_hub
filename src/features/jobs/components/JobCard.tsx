@@ -7,7 +7,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Card } from '@/shared/components/ui/card'
 import { ROUTES, JOB_TYPES, WORK_MODES } from '@/shared/constants'
 import { cn, formatSalaryRange, timeAgo } from '@/shared/lib/utils'
-import { useSavedJobs } from '../hooks/useSavedJobs'
+import { useSaveJobAction } from '../hooks/useSavedJobs'
 import type { Job } from '../types'
 
 interface JobCardProps {
@@ -21,7 +21,7 @@ function label(list: readonly { value: string; label: string }[], value: string)
 }
 
 export function JobCard({ job, matchScore, compact }: JobCardProps) {
-  const { isSaved, toggle } = useSavedJobs()
+  const { isSaved, toggleSave } = useSaveJobAction()
   const saved = isSaved(job.id)
 
   return (
@@ -69,7 +69,10 @@ export function JobCard({ job, matchScore, compact }: JobCardProps) {
                 variant="ghost"
                 size="icon"
                 aria-label={saved ? 'Remove from saved' : 'Save job'}
-                onClick={() => toggle(job.id)}
+                onClick={(e) => {
+                  e.preventDefault()
+                  toggleSave(job.id)
+                }}
                 className="h-8 w-8 shrink-0"
               >
                 <Bookmark className={cn('h-4 w-4', saved && 'fill-primary text-primary')} />

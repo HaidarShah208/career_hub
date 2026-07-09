@@ -35,7 +35,7 @@ import { useToast } from '@/shared/components/ui/toast'
 import { JobCard } from '../components/JobCard'
 import { recordJobView } from '../api/jobs.api'
 import { useJob } from '../hooks/useJobs'
-import { useSavedJobs } from '../hooks/useSavedJobs'
+import { useSaveJobAction } from '../hooks/useSavedJobs'
 import { useApplications } from '@/features/applications/hooks/useApplications'
 import { useAuthStore } from '@/app/store/auth.store'
 import {
@@ -55,7 +55,7 @@ export default function JobDetailsPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { job, related, isLoading, error } = useJob(id)
-  const { isSaved, toggle } = useSavedJobs()
+  const { isSaved, toggleSave } = useSaveJobAction()
   const { hasApplied, apply, isApplying } = useApplications()
   const isAuthenticated = useAuthStore(s => s.isAuthenticated)
 
@@ -250,7 +250,7 @@ export default function JobDetailsPage() {
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     variant="outline"
-                    onClick={() => toggle(job.id)}
+                    onClick={() => toggleSave(job.id)}
                     className={cn(saved && 'border-primary text-primary')}
                   >
                     <Bookmark className={cn('h-4 w-4', saved && 'fill-primary')} />

@@ -1,7 +1,10 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
+import { useNavigate, useLocation } from 'react-router-dom'
 
-import { STORAGE_KEYS } from '@/shared/constants'
+import { useAuthStore } from '@/app/store/auth.store'
+import { useToast } from '@/shared/components/ui/toast'
+import { ROUTES, STORAGE_KEYS } from '@/shared/constants'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -48,3 +51,27 @@ export const useSavedJobs = create<SavedJobsState>()(
     },
   ),
 )
+
+/** Save requires sign-in — guests are sent to login with a return path. */
+export function useSaveJobAction() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { toast } = useToast()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const { isSaved, toggle } = useSavedJobs()
+
+  function toggleSave(jobId: string) {
+    if (!isAuthenticated) {
+      toast({
+        title: 'Please sign in',
+        description: 'Create a candidate account to save jobs for later.',
+        variant: 'info',
+      })
+      navigate(ROUTES.login, { state: { from: location.pathname } })
+      return
+    }
+    toggle(jobId)
+  }
+
+  return { isSaved, toggleSave }
+}

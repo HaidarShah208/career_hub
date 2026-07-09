@@ -115,7 +115,7 @@ export function mapJob(j: BackendJob): Job {
     views: j.viewCount ?? 0,
     isFeatured: Boolean(j.isFeatured),
     isUrgent: Boolean(j.isUrgent),
-    isGovernment: false,
+    isGovernment: j.category === 'government',
     applyMethod: j.applyMethod || 'internal',
     applyUrl: j.applyUrl || undefined,
     backendStatus: j.status,

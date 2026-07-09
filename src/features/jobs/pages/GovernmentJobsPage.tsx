@@ -12,7 +12,7 @@ export default function GovernmentJobsPage() {
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
 
-  const { jobs: pageJobs, totalPages, isLoading } = useJobs({ query }, page)
+  const { jobs: pageJobs, totalPages, isLoading } = useJobs({ query, category: 'government' }, page)
 
   return (
     <div>
