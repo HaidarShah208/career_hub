@@ -231,7 +231,7 @@ export default function JobDetailsPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6 lg:sticky lg:top-20 lg:self-start">
+          <div className="min-w-0 space-y-6 lg:sticky lg:top-20 lg:self-start">
             <Card>
               <CardContent className="space-y-4 p-6">
                 {isExternal ? (
@@ -273,12 +273,14 @@ export default function JobDetailsPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="overflow-hidden">
               <CardHeader>
-                <CardTitle className="text-base">About {job.company.name}</CardTitle>
+                <CardTitle className="break-words text-base">About {job.company.name}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <p className="text-muted-foreground">{job.company.description}</p>
+                <p className="break-words text-muted-foreground [overflow-wrap:anywhere]">
+                  {job.company.description}
+                </p>
                 <Button asChild variant="outline" className="w-full">
                   <Link to={ROUTES.companyDetails(job.companyId)}>View company profile</Link>
                 </Button>

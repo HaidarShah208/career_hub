@@ -19,6 +19,9 @@ function buildParams(filters: Partial<JobFilters>, page: number, pageSize: numbe
     params.city = filters.city
   }
 
+  if (filters.category) params.category = filters.category
+  if (filters.experienceLevel) params.experienceLevel = filters.experienceLevel
+
   // workMode === remote maps to the REMOTE employment type on the backend.
   if (filters.workMode === 'remote') params.employmentType = 'REMOTE'
   else if (filters.jobType) params.employmentType = toBackendEmploymentType(filters.jobType, '')

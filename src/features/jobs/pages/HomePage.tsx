@@ -98,7 +98,7 @@ export default function HomePage() {
     [stats],
   )
 
-  const heroCategories = useMemo(() => JOB_CATEGORIES.slice(0, 8), [])
+  const heroCategories = useMemo(() => JOB_CATEGORIES.slice(0, 5), [])
 
   return (
     <div>
