@@ -200,15 +200,15 @@ export function PublicFooter() {
             <div className="mt-6 space-y-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-primary" />
-                <span>hello@pakistancareerhub.pk</span>
+                <span>dev.alihaidar.eng@gmail.com</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-primary" />
-                <span>+92 21 1111 1234 (UAN)</span>
+                <span>+92 3107580073</span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-primary" />
-                <span>Dolmen Mall, Tower-A, Clifton, Karachi</span>
+                <span>Lahore</span>
               </div>
             </div>
             <div className="mt-6 flex items-center gap-2">

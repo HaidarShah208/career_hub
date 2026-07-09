@@ -98,13 +98,7 @@ export default function HomePage() {
     [stats],
   )
 
-  const popularSearches = useMemo(() => {
-    const fromJobs = latest
-      .map((j) => j.title)
-      .filter((title, i, arr) => arr.indexOf(title) === i)
-      .slice(0, 6)
-    return fromJobs.length > 0 ? fromJobs : ['Software Engineer', 'Accountant', 'Remote']
-  }, [latest])
+  const heroCategories = useMemo(() => JOB_CATEGORIES.slice(0, 8), [])
 
   return (
     <div>
@@ -141,14 +135,14 @@ export default function HomePage() {
           >
             <JobSearchBar />
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">
-              <span className="text-muted-foreground">Popular:</span>
-              {popularSearches.map(term => (
+              <span className="text-muted-foreground">Browse:</span>
+              {heroCategories.map((cat) => (
                 <Link
-                  key={term}
-                  to={`${ROUTES.jobs}?q=${encodeURIComponent(term)}`}
+                  key={cat.value}
+                  to={`${ROUTES.jobs}?category=${encodeURIComponent(cat.value)}`}
                   className="rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary"
                 >
-                  {term}
+                  {cat.label}
                 </Link>
               ))}
             </div>

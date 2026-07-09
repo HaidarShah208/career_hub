@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
+  createAdminCategory,
+  deleteAdminCategory,
   deleteAdminJob,
   fetchAdminAnalytics,
   fetchAdminCategories,
@@ -9,6 +11,7 @@ import {
   fetchAdminUsers,
   fetchPendingEmployers,
   publishAdminJob,
+  updateAdminCategory,
   updateAdminUserStatus,
   verifyEmployerCompany,
 } from '../api/admin.api'
@@ -50,10 +53,26 @@ export function useAdminUsers(search = '', role = 'all') {
 }
 
 export function useAdminCategories() {
+  const queryClient = useQueryClient()
   const query = useQuery({
     queryKey: adminKeys.categories,
     queryFn: fetchAdminCategories,
     refetchOnWindowFocus: true,
+  })
+
+  const createMutation = useMutation({
+    mutationFn: (name: string) => createAdminCategory(name),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminKeys.categories }),
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) => updateAdminCategory(id, name),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminKeys.categories }),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteAdminCategory(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminKeys.categories }),
   })
 
   return {
@@ -61,6 +80,10 @@ export function useAdminCategories() {
     isLoading: query.isLoading,
     isError: query.isError,
     refetch: query.refetch,
+    createCategory: (name: string) => createMutation.mutateAsync(name),
+    updateCategory: (id: string, name: string) => updateMutation.mutateAsync({ id, name }),
+    removeCategory: (id: string) => deleteMutation.mutateAsync(id),
+    isMutating: createMutation.isPending || updateMutation.isPending || deleteMutation.isPending,
   }
 }
 

@@ -56,13 +56,11 @@ export function JobSearchBar({ className, initialQuery = '', initialCity = '', o
         />
       </div>
       <div className="hidden h-8 w-px bg-border sm:block" />
-      <div className="sm:w-56">
+      <div className="relative flex w-full items-center sm:w-56">
+        <MapPin className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Select value={city || 'all'} onValueChange={v => setCity(v === 'all' ? '' : v)}>
-          <SelectTrigger className="h-12 border-0 bg-transparent shadow-none focus:ring-0">
-            <span className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <SelectValue placeholder="All Cities" />
-            </span>
+          <SelectTrigger className="h-12 w-full border-0 bg-transparent pl-9 shadow-none focus:ring-0">
+            <SelectValue placeholder="All Cities" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Cities</SelectItem>
@@ -75,7 +73,7 @@ export function JobSearchBar({ className, initialQuery = '', initialCity = '', o
         </Select>
       </div>
       <Button type="submit" size="lg" className="h-12 shrink-0 px-8">
-        <Search className="h-4 w-4" /> Search Jobs
+        <Search className="h-4 w-4" /> Search
       </Button>
     </form>
   )

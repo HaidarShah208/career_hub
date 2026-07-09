@@ -154,6 +154,20 @@ export async function fetchAdminCategories(): Promise<AdminCategory[]> {
   return unwrap<AdminCategory[]>(res)
 }
 
+export async function createAdminCategory(name: string): Promise<AdminCategory> {
+  const res = await http.post('/admin/categories', { name })
+  return unwrap<AdminCategory>(res)
+}
+
+export async function updateAdminCategory(id: string, name: string): Promise<AdminCategory> {
+  const res = await http.patch(`/admin/categories/${id}`, { name })
+  return unwrap<AdminCategory>(res)
+}
+
+export async function deleteAdminCategory(id: string): Promise<void> {
+  await http.delete(`/admin/categories/${id}`)
+}
+
 export async function fetchAdminRevenue(): Promise<AdminRevenue> {
   const res = await http.get('/admin/revenue')
   return unwrap<AdminRevenue>(res)
