@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { MoreVertical, Search } from 'lucide-react'
 
 import { Badge, type BadgeProps } from '@/shared/components/ui/badge'
@@ -21,7 +21,6 @@ import {
 import { PageHeader } from '@/shared/components/common/PageHeader'
 import { PageLoader } from '@/shared/components/common/PageLoader'
 import { useToast } from '@/shared/components/ui/toast'
-import { useAuthStore } from '@/app/store/auth.store'
 import type { AdminUser } from '../api/admin.api'
 import { useAdminUsers } from '../hooks/useAdminData'
 import { formatDate } from '@/shared/lib/utils'
@@ -34,15 +33,15 @@ const ROLE_VARIANT: Record<AdminUser['role'], BadgeProps['variant']> = {
 
 export default function AdminUsersPage() {
   const { toast } = useToast()
-  const currentUserId = useAuthStore((s) => s.user?.id)
   const [query, setQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [role, setRole] = useState('all')
-  const { users, total, isLoading, toggleStatus } = useAdminUsers(query, role)
+  const { users, total, isLoading, isError, refetch, toggleStatus } = useAdminUsers(debouncedQuery, role)
 
-  const filtered = useMemo(
-    () => users.filter((u) => u.id !== currentUserId),
-    [users, currentUserId],
-  )
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQuery(query), 300)
+    return () => window.clearTimeout(timer)
+  }, [query])
 
   async function handleToggleStatus(user: AdminUser) {
     try {
@@ -63,11 +62,22 @@ export default function AdminUsersPage() {
 
   if (isLoading) return <PageLoader />
 
+  if (isError) {
+    return (
+      <div className="py-16 text-center">
+        <p className="text-sm text-muted-foreground">Could not load users from the database.</p>
+        <Button variant="outline" className="mt-4" onClick={() => void refetch()}>
+          Try again
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <div>
       <PageHeader
         title="User Management"
-        description={`${filtered.length} users (your admin account is hidden).`}
+        description={`${total} candidate & employer account${total === 1 ? '' : 's'} (admin accounts are excluded).`}
       />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row">
@@ -86,12 +96,11 @@ export default function AdminUsersPage() {
             <SelectItem value="all">All roles</SelectItem>
             <SelectItem value="candidate">Candidates</SelectItem>
             <SelectItem value="employer">Employers</SelectItem>
-            <SelectItem value="admin">Admins</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {filtered.length === 0 ? (
+      {users.length === 0 ? (
         <div className="py-16 text-center text-sm text-muted-foreground">No users found.</div>
       ) : (
         <Card className="overflow-hidden">
@@ -107,7 +116,7 @@ export default function AdminUsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filtered.map((user) => (
+                {users.map((user) => (
                   <tr key={user.id} className="hover:bg-muted/30">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
@@ -132,8 +141,7 @@ export default function AdminUsersPage() {
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{formatDate(user.joinedAt)}</td>
-                  <td className="px-4 py-3 text-right">
-                    {user.role !== 'admin' ? (
+                    <td className="px-4 py-3 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" aria-label="Actions">
@@ -146,10 +154,7 @@ export default function AdminUsersPage() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
-                  </td>
+                    </td>
                   </tr>
                 ))}
               </tbody>

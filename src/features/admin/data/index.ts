@@ -69,21 +69,3 @@ export interface ModerationJob {
  * Job Moderation screen fetches real jobs from the backend (see its page).
  */
 export const MODERATION_JOBS: ModerationJob[] = []
-
-export interface AdminCategory {
-  id: string
-  name: string
-  slug: string
-  jobs: number
-}
-
-export const ADMIN_CATEGORIES: AdminCategory[] = [
-  { id: 'c1', name: 'Software & IT', slug: 'software', jobs: 1240 },
-  { id: 'c2', name: 'Engineering', slug: 'engineering', jobs: 860 },
-  { id: 'c3', name: 'Sales & Marketing', slug: 'sales', jobs: 720 },
-  { id: 'c4', name: 'Finance & Accounting', slug: 'finance', jobs: 540 },
-  { id: 'c5', name: 'Human Resources', slug: 'hr', jobs: 310 },
-  { id: 'c6', name: 'Design & Creative', slug: 'design', jobs: 280 },
-  { id: 'c7', name: 'Healthcare', slug: 'healthcare', jobs: 410 },
-  { id: 'c8', name: 'Government', slug: 'government', jobs: 190 },
-]

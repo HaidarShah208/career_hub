@@ -107,6 +107,8 @@ export function AccountSettings({ extraNotifications = [] }: AccountSettingsProp
     }
   }
 
+  const isAdmin = user?.role === 'admin'
+
   async function handleDeleteAccount() {
     setIsDeleting(true)
     try {
@@ -293,13 +295,18 @@ export function AccountSettings({ extraNotifications = [] }: AccountSettingsProp
             <Button variant="outline" className="w-full justify-start" onClick={signOut}>
               <LogOut className="h-4 w-4" /> Sign out
             </Button>
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => setDeleteOpen(true)}
-            >
-              <Trash2 className="h-4 w-4" /> Delete account
-            </Button>
+       
+              {!isAdmin && (
+
+              
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => setDeleteOpen(true)}
+              >
+                <Trash2 className="h-4 w-4" /> Delete account
+              </Button>
+             )} 
           </CardContent>
         </Card>
       </div>

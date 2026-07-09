@@ -59,6 +59,13 @@ export interface AdminAnalytics {
   jobsByCategory: Array<{ name: string; value: number }>
 }
 
+export interface AdminCategory {
+  id: string
+  slug: string
+  name: string
+  jobs: number
+}
+
 export interface AdminRevenue {
   totalRevenueYtd: number
   revenueThisMonth: number
@@ -140,6 +147,11 @@ export async function verifyEmployerCompany(id: string, verified: boolean): Prom
 export async function fetchAdminAnalytics(): Promise<AdminAnalytics> {
   const res = await http.get('/admin/analytics')
   return unwrap<AdminAnalytics>(res)
+}
+
+export async function fetchAdminCategories(): Promise<AdminCategory[]> {
+  const res = await http.get('/admin/categories')
+  return unwrap<AdminCategory[]>(res)
 }
 
 export async function fetchAdminRevenue(): Promise<AdminRevenue> {

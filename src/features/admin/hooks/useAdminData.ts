@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   deleteAdminJob,
   fetchAdminAnalytics,
+  fetchAdminCategories,
   fetchAdminJobs,
   fetchAdminRevenue,
   fetchAdminUsers,
@@ -14,6 +15,7 @@ import {
 
 export const adminKeys = {
   users: (search: string, role: string) => ['admin', 'users', search, role] as const,
+  categories: ['admin', 'categories'] as const,
   pendingEmployers: ['admin', 'employers', 'pending'] as const,
   moderationJobs: ['admin', 'jobs', 'draft'] as const,
   analytics: ['admin', 'analytics'] as const,
@@ -42,7 +44,23 @@ export function useAdminUsers(search = '', role = 'all') {
     total: query.data?.total ?? 0,
     isLoading: query.isLoading,
     isError: query.isError,
+    refetch: query.refetch,
     toggleStatus: (id: string, isActive: boolean) => statusMutation.mutateAsync({ id, isActive }),
+  }
+}
+
+export function useAdminCategories() {
+  const query = useQuery({
+    queryKey: adminKeys.categories,
+    queryFn: fetchAdminCategories,
+    refetchOnWindowFocus: true,
+  })
+
+  return {
+    categories: query.data ?? [],
+    isLoading: query.isLoading,
+    isError: query.isError,
+    refetch: query.refetch,
   }
 }
 
