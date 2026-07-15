@@ -47,7 +47,7 @@ export function DashboardSidebar({ sections, open, collapsed, onToggleCollapse }
           size="icon"
           className={cn(
             'hidden shrink-0 lg:inline-flex',
-            collapsed && 'absolute right-1.5 top-2 h-7 w-7',
+            collapsed && 'absolute right-0 top-12 h-7 w-7',
           )}
           onClick={onToggleCollapse}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
