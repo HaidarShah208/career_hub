@@ -55,7 +55,12 @@ export function DashboardSidebar({ sections, open, collapsed, onToggleCollapse }
           {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
         </Button>
       </div>
-      <nav className={cn('scrollbar-thin flex-1 space-y-6 overflow-y-auto py-5', collapsed ? 'px-2' : 'px-3')}>
+      <nav
+        className={cn(
+          'sidebar-scroll flex-1 space-y-6 overflow-y-auto py-5',
+          collapsed ? 'px-2' : 'px-3',
+        )}
+      >
         {sections.map((section, idx) => (
           <div key={idx} className="space-y-1">
             {section.title && !collapsed && (
